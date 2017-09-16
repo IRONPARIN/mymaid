@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+	<% include head.ejs %>
+	<script>
+    var colors = {
+      palette: ['#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722', '#795548', '#9E9E9E', '#607D8B'],
+      getRandom: function() {
+        var rand = Math.floor((Math.random() * this.palette.length) + 1);
+        return this.palette[rand - 1];
+      }
+    }
+    var listHeight = '150px';
+    $(function() {
+      // pulse heart button
+      $('.heart').click(function() {
+        $(this).toggleClass('liked');
+      });
+      // comment expander
+      $('.toggleList a').click(function() {
+        $('.toggleList').toggleClass('toggleExpanded');
+        $('section.all').toggleClass('expanded');
+        $('.mask').toggle();
+        var scrollHeight = $('.list').prop('scrollHeight');
+        var height = $('.list').height();
+        if (scrollHeight === height){
+        	$('.list').css('max-height', listHeight);	
+        } // collapse              
+        else {
+        	$('.list').css('max-height', scrollHeight + 'px');
+        	$('.toggleList a').hide();
+        }// expand
+      });
+      // header line random color
+      $('.header').css('border-bottom-color', colors.getRandom());
+      // button ripple effect
+      $(".addComment a").click(function(e) {
+        var ink, d, x, y;
+        if ($(this).find(".ink").length === 0) {
+          $(this).prepend("<span class='ink'></span>");
+        }
+        ink = $(this).find(".ink");
+        ink.removeClass("animate");
+        if (!ink.height() && !ink.width()) {
+          d = Math.max($(this).outerWidth(), $(this).outerHeight());
+          ink.css({
+            height: d,
+            width: d
+          });
+        }
+        x = e.pageX - $(this).offset().left - ink.width() / 2;
+        y = e.pageY - $(this).offset().top - ink.height() / 2;
+        ink.css({
+          top: y + 'px',
+          left: x + 'px'
+        }).addClass("animate");
+      });
+      // default list height
+      $('.list').css('max-height', listHeight);
+    });        
+	</script>
+
+<body ng-app="maid" ng-controller="detail-maid">
+	<script>
+		angular.module("maid", [])
+		.controller("detail-maid", function($scope,$http){	
+      $scope.commentList = [{
+        'imgUrl': 'http://i1.stay.com/i/fxVFiCqacbDfJ8fP5WxYuEp3osw=/C192x192/user/435/792/7829950.jpg',
+        'fullName': 'Chelsea Dinen',
+        'date': '07 Apr 11:29',
+        'commentHtml': 'There should be a nice view up there!'
+      }, {
+        'imgUrl': 'http://megatubos.com.br/wp-content/uploads/2015/03/sagitsolutions-india-pointing-man-192x192.png',
+        'fullName': 'Arne Hjeltnes',
+        'date': '07 Apr 14:21',
+        'commentHtml': 'Me too I did a parachute jump, it was a memorable experience!'
+      }, {
+        'imgUrl': 'http://www.opry.com/sites/default/files/artist_profile_photo/saraevans_profile_0.jpg',
+        'fullName': 'Sarah Evans',
+        'date': '07 Apr 23:15',
+        'commentHtml': 'Amazing, I would love to try!'
+      }, {
+        'imgUrl': 'https://www.opry.com/sites/default/files/artist_profile_photo/saraevans_profile_0.jpg',
+        'fullName': 'Maurizio Paletti',
+        'date': '08 Apr 12:46',
+        'commentHtml': 'Yes, it was a great experience, although until the parachute opens you feel like a turkey on Thanksgiving Day!'
+      }];
+      $scope.commentsRendered = function() {
+        setTimeout(function() {
+          $('.expandWrap').toggle($('.list').prop('scrollHeight') > $('.list').height());
+        }, 0);
+      }
+      if ($scope.commentList.length == 0)
+        $('.expandWrap').hide();
+    })
+    .directive('repeatDone', function() {
+      return function(scope, element, attrs) {
+        if (scope.$last) { // all comments rendered
+          scope.$eval(attrs.repeatDone);
+        }
+      }
+    });
+	</script>
+
+  <% include navbar-maid.ejs %>
+
+	<div class="card">
+	  <img src="https://s13.postimg.org/6ft5hgjkn/img_leaves.jpg" class="card-media" />
+	  <div class="card-details">
+	    <h2 class="card-head">Cafe Basilico</h2>
+	    <span class="card-head-small">
+	    	<i class="fa fa-dollar fa-fw"></i> Price
+	    </span>
+	    <div class="card-stars clearfix">
+	      <div class="card-stars-list">
+	        <span>★★★★★</span>
+	        <span class="card-stars-text">4.7 (51)</span>
+	      </div>	      
+	    </div>
+	    <h4 class="card-descrip">Description</h4>
+	    <p class="card-body-text">Small plates, salads and sandwiches in an intimate setting with 12 indoor seats plus patio seating.</p>
+
+    <div class="wrap-button">
+			<a href="../../employment/" class="btn btn-default" type="button"><i class="fa fa-check-square-o fa-fw"></i> Employment</a>
+    </div>
+    
+    <div class="all">
+			<div class="info">
+				<div class="total">
+					<span>{{commentList.length}}</span> Comments
+				</div>
+			</div>
+			<div class="list" ng-class="{noComments: commentList.length == 0}">
+				<section ng-repeat="comment in commentList" repeat-done="commentsRendered()">
+					<div class="comment-row">
+						<div class="commentPhoto">
+							<img ng-src="{{comment.imgUrl}}" alt="" />
+						</div>
+						<div class="commentDetails">
+							<span class="commentUser">{{comment.fullName}}</span>
+							<span class="commentDate">{{comment.date}}</span>
+							<div class="commentText">{{comment.commentHtml}}</div>
+						</div>
+					</div>
+				</section>
+			</div>
+			<div class="expandWrap">
+				<div class="mask"></div>
+				<div class="toggleList"><a><i class="fa fa-angle-double-down"></i></a></div>
+			</div>
+    </div>
+
+  </div>
+
+</body>
+</html>

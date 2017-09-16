@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html ng-app="maid">
+
+	<% include head.ejs %>
+
+<body ng-controller="regis-control">
+  <script src="/angular-animate/angular-animate.js"></script>
+  <script src="/angular-aria/angular-aria.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-material/1.0.4/angular-material.js"></script>
+  <script>
+    angular.module("maid", ['ngMaterial'])
+    .factory("$config", function(){
+      return {
+        post: {
+            post: {
+                headers: {"Content-Type": "application/json;charset=UTF-8"}
+            }
+        }
+        , Address: <%- JSON.stringify(config.Address) %>
+      }
+    })    
+    .controller("regis-control", function($scope, $http, $config, $filter){
+      $scope.now = new Date();
+      $scope.gender = ('Male,Female').split(',').map(function(gender) {
+        return {objg: gender};
+      });
+      $scope.role = ('Maid,Employer').split(',').map(function(role) {
+        return {objr: role};
+      });
+      $scope.education = ('Primary School,High School,Vocational Certificate,High Vocational Certificate,Non-Formal Education,B.A. (Bachelor of Arts)').split(',').map(function(education) {
+        return {objedu: education};
+      });
+      $scope.workday = ('Monday - Friday,Weekend,All Day').split(',').map(function(workday) {
+        return {objwd: workday};
+      });
+      $scope.worktime = ('8.00 - 18.00,18:01 - 21:00,All Time').split(',').map(function(worktime) {
+        return {objwt: worktime};
+      });
+      $scope.items = ['Speak English','Speak Chinese','Cleaning equipment'];
+      $scope.selected = [];
+      $scope.toggle = function (item, list) {
+        var idx = list.indexOf(item);
+        if (idx > -1) list.splice(idx, 1);
+        else list.push(item);
+      };
+      $scope.exists = function (item, list) {
+        return list.indexOf(item) > -1;
+      };
+
+      $scope.address = $config.Address;
+      $scope.citylist = $scope.address.citylist;
+      $scope.districtlist = $scope.address.districtlist;
+      $scope.subdistrictlist = $scope.address.subdistrictlist;
+      $scope.getCity = function () {
+        return citylist;
+      };
+      $scope.getCityDistrict = function (cityId) {
+        $scope.districtt = ($filter('filter')($scope.districtlist, { cityId: cityId }));  
+      };
+      $scope.getDistrictSubDistrict = function (district) {
+        $scope.subdistrictt = ($filter('filter')($scope.subdistrictlist, { district: district }));         
+      };
+
+      $scope.submit = function(obj){
+        var bd = obj.bday;
+        var d = new Date(bd);
+        obj.bday = d.toLocaleString();  
+            
+        console.info('email', obj.email);
+        $scope.email = obj.email;
+        var x = $scope.email;
+        var atpos = x.indexOf("@");
+        var dotpos = x.lastIndexOf(".");
+        $scope.valid = null;
+        if (atpos<1 || dotpos<atpos+2 || dotpos+2>=x.length){
+          $scope.valid = false;
+        }
+        if($scope.valid == false){
+          alert("Not a valid e-mail address");
+          $scope.valid == null;
+        }
+        if(obj.pass !== obj.conpass){
+          alert("Password and Confirm Password dosen't match");
+          $scope.valid == null;
+        }
+        else{
+          if (obj.expert != null) {
+            //if obj == [1] becus obj.expert is array
+            var ex = obj.expert;
+            var done = ex.join();
+            console.info("done : ", ex, done);
+            obj.expert = done;
+            console.info("submit ex : ", obj.expert);
+          }               
+          console.info("submit : ", obj);
+          
+          $http.post("../../register", JSON.stringify(obj), $config.post)
+          .then(function(res){
+            console.info("post : ", res);
+            alert("SAVE SUBMIT");
+            window.location.href = '../../uploadimage';
+            $scope.saving = false;
+          }, function(err){
+            console.error(err);
+            alert("Post Error", err);
+            $scope.saving = false;
+          })
+        }
+      }     
+    });
+  </script>
+  <script>
+    function load() {
+      document.getElementById('nextbutt').disabled = true;
+    }
+    window.onload = load;
+  </script>
+  <script>
+    function checkID(id){
+      if(id.length != 13) 
+        return false;        
+      for(i=0, sum=0; i < 12; i++)
+        sum += parseFloat(id.charAt(i))*(13-i); 
+      if((11-sum%11)%10!=parseFloat(id.charAt(12)))
+        return false; return true;
+    }
+    function checkForm(){ 
+      if(!checkID(document.form1.txtID.value)){   
+        document.getElementById('errm').innerHTML="Personal ID is Unidentified!";    
+        document.getElementById('errm').style.color = "red";
+        document.getElementById("nextbutt").disabled = true;
+      }
+      else {
+        document.getElementById('errm').innerHTML="Personal ID is Identifted!"; 
+        document.getElementById('errm').style.color = "green";          
+        document.getElementById("nextbutt").disabled = false;
+        document.getElementById("perid").disabled = true;
+      }
+    }
+  </script>
+
+	<script type="text/javascript">
+      var current_fs, next_fs, previous_fs; 
+      var left, opacity, scale; 
+      var animating; 
+      $(function(){
+        $(".next").click(function() {
+        if (animating) return false;
+        animating = true;
+        current_fs = $(this).parent();
+        next_fs = $(this).parent().next();
+        $("#progressbar li").eq($("fieldset").index(next_fs)).addClass("active");
+        next_fs.show();
+        current_fs.animate({
+          opacity: 0
+        }, {
+          step: function(now, mx) {
+            scale = 1 - (1 - now) * 0.2;
+            left = (now * 50) + "%";
+            opacity = 1 - now;
+            current_fs.css({
+              'transform': 'scale(' + scale + ')'
+            });
+            next_fs.css({
+              'left': left,
+              'opacity': opacity
+            });
+          },
+          duration: 800,
+          complete: function() {
+            current_fs.hide();
+            animating = false;
+          },
+          easing: 'easeInOutBack'
+        });
+        });
+        $(".previous").click(function() {
+          if (animating) return false;
+          animating = true;
+          current_fs = $(this).parent();
+          previous_fs = $(this).parent().prev();
+          $("#progressbar li").eq($("fieldset").index(current_fs)).removeClass("active");
+          previous_fs.show();
+          current_fs.animate({
+            opacity: 0
+          }, {
+            step: function(now, mx) {
+              scale = 0.8 + (1 - now) * 0.2;
+              left = ((1 - now) * 50) + "%";
+              opacity = 1 - now;
+              current_fs.css({
+                'left': left
+              });
+              previous_fs.css({
+                'transform': 'scale(' + scale + ')',
+                'opacity': opacity
+              });
+            },
+            duration: 800,
+            complete: function() {
+              current_fs.hide();
+              animating = false;
+            },
+            easing: 'easeInOutBack'
+          });
+        });
+      });          
+  </script>  
+
+    <div class="wrap-regis">
+  	<!-- multistep form -->
+      <form id="msform" name="form1" ng-submit="submit(user)" >
+        <!-- progressbar -->
+        <ul id="progressbar">
+          <li class="active">Personal ID</li>
+          <li>Create Account</li>
+          <li>Personal Details</li>
+        </ul>
+        <!-- fieldsets -->
+        <fieldset>
+          <h2 class="fs-title">Authentication</h2>
+          <md-input-container class="md-block">
+            <label>Personal ID</label>
+            <input type="text" ng-model="user.perid" name="txtID" id="perid" ng-required="required">
+          </md-input-container> 
+          <div id="errm" style="margin-top: 5px;"> </div>
+          <div class="wrap-but-check" style="width: 30%; margin: 5px auto;">
+            <input type="button" name="check" class="btn btn-default" value="Check" onclick="checkForm(); return false;" />
+          </div>
+          <md-input-container class="md-block">
+            <label>Password</label>
+            <input type="password" ng-model="user.pass" ng-required="required">
+          </md-input-container> 
+          <md-input-container class="md-block">
+            <label>Confirm Password</label>
+            <input type="password" ng-model="user.conpass" ng-required="required">
+          </md-input-container>
+          <md-input-container class="md-block">
+            <label>Role</label>
+            <md-select ng-model="user.role" ng-required="required">
+              <md-option ng-repeat="r in role" value="{{r.objr}}">{{r.objr}}</md-option>
+            </md-select>
+          </md-input-container>
+          <input type="button" name="next" class="next action-button" id="nextbutt" value="Next" />
+        </fieldset>
+        <fieldset>
+          <h2 class="fs-title">Create your account</h2>
+          <md-input-container class="md-block">
+            <label>Name</label>
+            <input type="text" ng-model="user.name" ng-required="required">
+          </md-input-container>
+          <md-input-container class="md-block">
+            <label>Mobile Number</label>
+            <input type="text" ng-model="user.mnumber" ng-required="required">
+          </md-input-container>
+          <md-input-container class="md-block">
+            <label>Email</label>
+            <input type="email" ng-model="user.email" ng-required="required">
+          </md-input-container>
+          <label>Birth Date</label>
+          <md-datepicker ng-model="user.bday" md-max-date="now" ng-required="required"></md-datepicker>
+          <md-input-container class="md-block">
+            <label>Gender</label>
+            <md-select ng-model="user.gender" ng-required="required">
+              <md-option ng-repeat="g in gender" value="{{g.objg}}">{{g.objg}}</md-option>
+            </md-select>
+          </md-input-container>
+          <h4>Address</h4>
+          <md-input-container class="md-block" style="width: 95%;"> 
+                <label>City</label>
+                <md-select name="city" ng-model="model.city" ng-required="true" flex="100">
+                    <md-option ng-repeat="city in citylist" value="{{city.city}}" ng-click="getCityDistrict(city.id)" >
+                        {{city.city}}
+                    </md-option>
+                </md-select>    
+            </md-input-container> 
+            <div layout="row" style="margin-top: 0px;" ng-show="!!model.city">              
+              <div flex="50">
+                <md-input-container class="md-block" ng-show="!!model.city">
+                    <label>District</label>
+                    <md-select name="district" ng-model="user.district" ng-required="true" >
+                        <md-option ng-repeat="d in districtt" value="{{d.district}}" ng-click="getDistrictSubDistrict(d.district)">
+                            {{d.district}}
+                        </md-option>
+                    </md-select>           
+                </md-input-container>        
+              </div>  
+              <div flex="50">
+                <md-input-container class="md-block" ng-show="!!user.district">
+                    <label>Sub-District</label>
+                    <md-select name="subdistrict" ng-model="user.subdistrict" ng-required="true" >
+                        <md-option ng-repeat="subdis in subdistrictt" value="{{subdis.subdistrict}}">
+                            {{subdis.subdistrict}}
+                        </md-option>
+                    </md-select>           
+                </md-input-container> 
+              </div>                    
+            </div>
+            <div layout="row" ng-show="!!model.city" >
+              <div flex="33">
+                <md-input-container class="md-block">
+                    <label>Home Number</label>
+                    <input ng-model="user.hnum">
+                </md-input-container> 
+              </div>
+              <div flex="33">
+                <md-input-container class="md-block">
+                    <label>Soi</label>
+                    <input ng-model="user.soi">
+                </md-input-container>
+              </div>
+              <div flex="33">
+                <md-input-container class="md-block">
+                    <label>Road</label>
+                    <input ng-model="user.road">
+                </md-input-container> 
+              </div>                      
+            </div>
+          
+          <input type="button" name="previous" class="previous action-button" value="Previous" />
+          <input type="button" name="next" class="next action-button" value="Next" />
+        </fieldset>
+        <fieldset>
+          <h2 class="fs-title">Personal details</h2>
+          <md-input-container class="md-block">
+            <label>Biography</label>
+            <textarea ng-model="user.bio" md-maxlength="150" rows="5" md-select-on-focus ng-required="required"></textarea>
+          </md-input-container>
+          <div class="maid-detail" ng-show="user.role == 'Maid'">
+            <md-input-container class="md-block">
+              <label>Education</label>
+              <md-select ng-model="user.education" ng-required="required">
+                <md-option ng-repeat="edu in education" value="{{edu.objedu}}">{{edu.objedu}}</md-option>
+              </md-select>
+            </md-input-container> 
+            <md-input-container class="md-block">
+              <label>Day of work</label>
+              <md-select ng-model="user.dwork" ng-required="required">
+                <md-option ng-repeat="wd in workday" value="{{wd.objwd}}">{{wd.objwd}}</md-option>
+              </md-select>
+            </md-input-container> 
+            <md-input-container class="md-block">
+              <label>Time of work</label>
+              <md-select ng-model="user.twork" ng-required="required">
+                <md-option ng-repeat="wt in worktime" value="{{wt.objwt}}">{{wt.objwt}}</md-option>
+              </md-select>
+            </md-input-container> 
+            <h4>Experience</h4>
+            <div layout="row" style="margin: 0 auto; width: 94%;">             
+            <div flex="50">
+              <md-input-container class="md-block">
+                  <label>Position</label>
+                  <input ng-model="user.position">
+              </md-input-container>
+            </div>  
+            <div flex="50">
+              <md-input-container class="md-block">
+                  <label>Company</label>
+                  <input ng-model="user.company">
+              </md-input-container> 
+            </div>                    
+          </div>
+            <h4>Expert</h4>
+            <div class="checklist" ng-model="user.expert" ng-repeat="item in items">
+              <md-checkbox ng-checked="exists(item, selected)" ng-click="toggle(item, selected); user.expert=selected;" class="blue">
+                {{ item }}
+              </md-checkbox>
+            </div>
+          </div>
+          <div class="clear-float"></div>          
+          <input type="button" name="previous" class="previous action-button" value="Previous" />
+          <input type="submit" name="submit" class="submit action-button" value="Submit" ng-disabled="saving"/>
+        </fieldset>
+      </form>
+    </div><!-- wrap-regis -->
+	</body>
+</html>

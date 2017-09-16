@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html ng-app="mymaid">
+	<% include head.ejs %>
+	
+<body ng-controller="employment">
+
+    <script>
+      angular.module('mymaid', ['ngMaterial'])
+      .factory("$config", function(){
+        return {
+          post: {
+              	post: {
+                  	headers: {"Content-Type": "application/json;charset=UTF-8"}
+              	}
+          }
+          , Firstname : <%- JSON.stringify(firstname) %>
+          , Image : <%- JSON.stringify(image) %> 
+          , Address: <%- JSON.stringify(config.Address) %>
+          , Times : <%- JSON.stringify(config.Times) %>
+          , Hours : <%- JSON.stringify(config.Hours) %>
+        }
+      })
+      .controller('employment', function ($scope, $http, $config, $filter) {
+      	$scope.firstname = $config.Firstname;
+        $scope.image = $config.Image;               
+        $scope.time = $config.Times;
+        $scope.hourslist = $config.Hours;
+        $scope.myDate = new Date(); 
+        var salary = 80 ;
+        var totalprice = 0;
+        var districtprice = 0;
+        var insuranceprice = 0;
+        var ratingprice = 0;
+        var calhour = 0;
+
+        $http.get("../employment/<%= id %>.json")
+		.then(function (res) {
+			console.info("maid/:id.json : ", res);
+			$scope.maiddistrict = res.data.district;
+			$scope.maidrating = res.data.rating;
+			if ($scope.maidrating == 0) {
+				ratingprice = 0;
+				$scope.calculatorWage();
+			}
+			else if ($scope.maidrating >= 1 && $scope.maidrating < 2) {
+				ratingprice = (salary * 0.05);
+				console.info("ratingprice : ", ratingprice);
+				$scope.calculatorWage();					
+			}
+			else if ($scope.maidrating >= 2 && $scope.maidrating < 3) {
+				ratingprice = (salary * 0.10);
+				console.info("ratingprice : ", ratingprice);
+				$scope.calculatorWage();
+			}
+			else if ($scope.maidrating >= 3 && $scope.maidrating < 4) {
+				ratingprice = (salary * 0.15);
+				console.info("ratingprice : ", ratingprice);
+				$scope.calculatorWage();
+			}
+			else if ($scope.maidrating >= 4 && $scope.maidrating < 5) {
+				ratingprice = (salary * 0.20);
+				console.info("ratingprice : ", ratingprice);
+				$scope.calculatorWage();
+			}
+			else if ($scope.maidrating >= 5) {
+				ratingprice = (salary * 0.25);
+				console.info("ratingprice : ", ratingprice);
+				$scope.calculatorWage();
+			}
+		})
+		.catch(function (err) {
+			console.error("user/:id.json : ", err);
+			alert("Catch Error user/:id", err);
+		})
+
+        $scope.getHourtoCal = function(hourId){
+        	calhour = hourId;
+        	console.info("calhour : ", calhour);
+        	totalprice = (salary+ratingprice) * calhour;
+        	console.info("totalprice : ", totalprice);
+        	$scope.calculatorWage();
+        }              
+
+        $scope.items = ['Damage Insurance'];
+        $scope.address = $config.Address;
+        $scope.citylist = $scope.address.citylist;
+        $scope.districtlist = $scope.address.districtlist;
+        $scope.subdistrictlist = $scope.address.subdistrictlist;
+        $scope.getCity = function () {
+            return citylist;
+        };
+        $scope.getCityDistrict = function (cityId) {
+            $scope.district = ($filter('filter')($scope.districtlist, { cityId: cityId }));
+            //$scope.showDistrict(cityId);            
+        };
+        $scope.getDistrictSubDistrict = function (district) {
+            $scope.subdistrict = ($filter('filter')($scope.subdistrictlist, { district: district }));
+            //$scope.showSubDistrict(districtId);
+            $http.post("../employment/getdistrict", JSON.stringify({ district: district, maiddistrict: $scope.maiddistrict }), $config.post)
+			.then(function(res){
+				console.info("post : ", res);
+				$scope.typedis = res.data[0].type;
+				console.info('typedis1 : ',$scope.typedis);					
+					if ($scope.typedis === 0) {
+						districtprice = 50;
+						console.info("districtprice : ", districtprice);
+						$scope.calculatorWage();
+					}
+					else if ($scope.typedis == 1) {
+						districtprice = 100;
+						console.info("districtprice : ", districtprice);
+						$scope.calculatorWage();
+					}
+					else if ($scope.typedis == 2) {
+						districtprice = 150;
+						console.info("districtprice : ", districtprice);
+						$scope.calculatorWage();
+					}					
+				}, function(err){
+					console.error(err);
+				}
+			)			
+        };
+        $scope.getTimeHours = function(timeId){
+        	$scope.hours = ($filter('filter')($scope.hourslist, { timeId: timeId }));
+        }
+        var cnt=0;
+        $scope.getCheckbox = function(){        	
+        	cnt=cnt+1;
+        	console.info("cnt : ", cnt);
+        	var countclick = cnt % 2;
+        	console.info("countclick : ", countclick);
+
+        	if (countclick != 0 && !!totalprice) {
+        		insuranceprice = 100;
+        		console.info("insuranceprice : ", insuranceprice);
+        		$scope.calculatorWage();
+        	}
+        	else if (countclick == 0 && !!totalprice){
+        		insuranceprice = 0;
+        		console.info("insuranceprice : ", insuranceprice);
+        		$scope.calculatorWage();
+        	}	        
+        }  
+        $scope.calculatorWage = function(){
+        	console.info("calculatorWage");
+        	if (!!totalprice) {
+        		$scope.total = totalprice + districtprice + insuranceprice + 30;	
+        	}        	
+        }
+        var now = new Date();
+        var month = ('0' + (now.getMonth() + 1)).slice(-2);
+        var year = now.getUTCFullYear();
+        var date = ('0' + now.getDate()).slice(-2);
+        console.info("today is ", year, month , date);
+        var today = ""+year+month+date;
+        $scope.today = today;
+        console.info("today ", today);
+
+        $scope.dateOptions = {
+		    'year-format': "'yy'",
+		    'starting-day': 1
+		};
+
+        $scope.submit = function(obj){
+        	console.info("submit : ",obj);
+        	var workdate = obj.workdate;
+        	var d = new Date(workdate);
+			var a = d.getDate();
+		    var m = d.getMonth()+1;
+		    var y = d.getFullYear();
+		    var z = y+"-"+m+"-"+a;
+		    console.info("Z date : ",z);
+			obj.workdate = z;
+
+			//obj.workdate = d.toLocaleString();
+        	// var ioio = obj.workdate.toUTCString();
+        	// obj.workdate = ioio;
+        	// console.info("workdate : ",obj.workdate, ioio);
+        	console.info("obj.workdate ",obj.workdate);
+
+        	var a = Math.floor(100000 + Math.random() * 900000);   
+		    a = String(a);
+		    a = a.substring(0,4);		    
+		    $scope.digitin = a;
+		    console.info("a : ",$scope.digitin);
+		    var b = Math.floor(100000 + Math.random() * 900000);   
+		    b = String(b);
+		    b = b.substring(0,4);
+		    $scope.digitout = b;
+		    console.info("b : ",$scope.digitout);
+		    
+		    //var hour = obj.hours;
+		    var starttime = obj.starttime;
+		    var st = starttime.split(':').map(function(h) {
+		        return {objh: h};
+		    });
+		    console.info("st : ",st);
+		    console.info("st : ",st[0].objh);
+		    var h = parseInt(st[0].objh);
+		    var endtime = h + calhour;	
+		    $scope.endtime = endtime+":"+st[1].objh;	    
+		    console.info("endtime : ", endtime);
+		    console.info("endtime : ", $scope.endtime);
+
+		    var tt = $scope.total;
+		    console.info("tt : ", tt);
+
+		    var sendobj = obj.starttime+','+obj.hnumber; 
+			console.info("sendobj : ",sendobj);
+
+		    $http.post("../employment/", JSON.stringify({obj, digitin: $scope.digitin, digitout: $scope.digitout, endtime: $scope.endtime, wage: $scope.total, iddate : $scope.today}), $config.post)
+				.then(function(res){
+					console.info("post : ", res);
+					var empid = res.data[0].id_employ;
+					console.info("empid : ",empid);
+					alert("SAVE SUBMIT");					
+					window.location.href = '../../contractt/'+empid;									
+				}, function(err){
+					console.error(err);
+				}
+			)
+        }
+        $scope.modal = function(h){
+	    	$scope.user = h;
+	    }
+      });
+    </script>
+    <script>
+    	
+    </script>
+	<% include navbar-maid.ejs %>
+
+	<div class="wrap-edit">
+	    <md-content>
+	        <form name="employment">  
+	        	<h4>Employment Maid</h4>
+	            <label>Date</label>
+	            <md-datepicker ng-model="user.workdate" md-min-date="myDate" ng-required="true"></md-datepicker>
+	            <div layout="row">
+		        	<div flex="50">
+		        		<md-input-container class="md-block">
+				            <label>Start Time</label>
+				            <md-select ng-model="user.starttime" ng-required="true">
+				              <md-option ng-repeat="t in time" value="{{t.time}}" ng-click="getTimeHours(t.id)">
+				                {{t.time}}
+				              </md-option>
+				            </md-select>
+				        </md-input-container>	
+		        	</div>
+		        	<div flex="50">
+		        		<md-input-container class="md-block">
+				            <label>Hours</label>
+				            <md-select ng-model="user.hours" ng-required="true">
+				              <md-option ng-repeat="h in hours" value="{{h.hour}}" ng-click="getHourtoCal(h.id)">
+				                {{h.hour}}
+				              </md-option>
+				            </md-select>
+				        </md-input-container>
+		        	</div>       				        
+		        </div>
+		        <h5>Address</h5>
+        		<md-input-container class="md-block" style="width: 95%;"> 
+		          	<label>City</label>
+		          	<md-select name="city" ng-model="user.city" ng-required="true" flex="100">
+		              	<md-option ng-repeat="city in citylist" value="{{city.city}}" ng-click="getCityDistrict(city.id)" >
+		                  	{{city.city}}
+		              	</md-option>
+		          	</md-select>    
+		        </md-input-container> 
+		        <div layout="row" style="margin-top: 0px;" ng-show="!!user.city">		        	
+		        	<div flex="50">
+		        		<md-input-container class="md-block" ng-show="!!user.city">
+				            <label>District</label>
+				            <md-select name="district" ng-model="user.district" ng-required="true" >
+				                <md-option ng-repeat="district in district" value="{{district.district}}" ng-click="getDistrictSubDistrict(district.district)">
+				                    {{district.district}}
+				                </md-option>
+				            </md-select>           
+				        </md-input-container>        
+		        	</div>  
+		        	<div flex="50">
+		        		<md-input-container class="md-block" ng-show="!!user.district">
+				            <label>Sub-District</label>
+				            <md-select name="subdistrict" ng-model="user.subdistrict" ng-required="true" >
+				                <md-option ng-repeat="subdistrict in subdistrict" value="{{subdistrict.subdistrict}}">
+				                    {{subdistrict.subdistrict}}
+				                </md-option>
+				            </md-select>           
+				        </md-input-container>  	
+		        	</div>     				        
+		        </div>
+		        <div layout="row" ng-show="!!user.subdistrict" >
+		        	<div flex="33">
+		        		<md-input-container class="md-block">
+				            <label>Home Number</label>
+				            <input type="number" ng-model="user.hnumber" ng-required="true">
+				        </md-input-container>	
+		        	</div>
+		        	<div flex="33">
+		        		<md-input-container class="md-block">
+				            <label>Soi</label>
+				            <input ng-model="user.soi">
+				        </md-input-container>
+		        	</div>
+		        	<div flex="33">
+		        		<md-input-container class="md-block">
+				            <label>Road</label>
+				            <input ng-model="user.road">
+				        </md-input-container>	
+		        	</div>       				        
+		        </div>
+		        <h5>Extras</h5>
+		        <div ng-repeat="item in items">
+			        <md-checkbox class="blue" id="check" style="font-size: 16px;" ng-click="getCheckbox()" ng-model="user.insurance">
+			              {{ item }}
+			        </md-checkbox>	
+			    </div>
+		        <h4 class="price" style="text-align: center; margin: 10px;" ng-show="!!total">{{total}} Bath</h4>
+		        <div style="width: 60%; margin: 0 auto;">
+		            <md-button class="md-raised md-cornered submit-btn" id="modal-button" type="button" ng-click="modal(user)" data-toggle="modal" data-target="#modalSubmit"> Submit </md-button>  
+		        </div>
+	          	
+	        </form>
+	      </div>
+	    </md-content>
+	</div>
+	<form class="modal fade" id="modalSubmit" role="dialog" style="" method="POST" ng-submit="submit(user)">
+       	<div class="modal-dialog" style="width: 80%; margin: 200px auto;">
+	      	<div class="modal-content" style="padding: 10px;">
+		        <div class="modal-body">
+	        		<h4 style="text-align: center; margin-bottom: 10px;">Confirm Employment</h4>
+	                <p style="font-size: 16px;">Date : {{user.workdate | date : 'd MMM yyyy'}}<br>
+	                Time : {{user.starttime}}<br>
+	                Hours : {{user.hours}}<br>
+	                Address : {{user.hnumber}} {{user.soi}} {{user.road}} {{user.subdistrict}} {{user.district}} {{user.city}}<br>
+	                Insurance : {{user.insurance}}<br>
+	                Wage : {{total}} Bath<br></p>
+	        		<button class="btn btn-default" type="button" data-dismiss="modal" xonclick="window.history.back();">Cancle</button>
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		         	<button type="submit" class="btn btn-success" ng-disabled="saving"><i class="fa fa-save"></i> Submit</button>
+	        	</div><!-- modal-body -->				        	
+	      	</div><!-- modal-content -->
+	    </div><!-- modal-dialog -->
+   	</form><!-- modal -->
+</body>
+</html>

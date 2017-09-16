@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+	<% include head.ejs %>
+
+<body ng-app="maid" ng-controller="maid-ctrl">
+
+	<script>
+    	angular.module("maid", [])    	
+    	.factory("$config", function(){
+    		return {
+    			post: {
+			        post: {
+			            headers: {"Content-Type": "application/json;charset=UTF-8"}
+			        }
+			    }
+			    , Firstname : <%- JSON.stringify(firstname) %>
+			    , Image : <%- JSON.stringify(image) %> 
+    		}
+    	})
+    	.controller("maid-ctrl", function($scope, $http, $config){
+    		$scope.firstname = $config.Firstname;
+    		$scope.image = $config.Image;
+    		$http.get("../showmaid/list.json")
+    		.then(function (res) {
+      			console.info("showmaid/list.json : ",res);
+    			$scope.model = res.data;
+    			var priceperhour = 80;
+    			$scope.model.forEach(function(e){
+    				$scope.rating = e.rating;
+    				if ($scope.rating == 0) {
+						e.pricehour = priceperhour;
+						console.info("e.pricehour : ", e.pricehour);					
+					}
+					else if ($scope.rating >= 1 && $scope.rating < 2) {
+						e.pricehour = (priceperhour * 0.05)+priceperhour;
+						console.info("e.pricehour : ", e.pricehour);					
+					}
+					else if ($scope.rating >= 2 && $scope.rating < 3) {
+						e.pricehour = (priceperhour * 0.10)+priceperhour;
+						console.info("e.pricehour : ", e.pricehour);
+					}
+					else if ($scope.rating >= 3 && $scope.rating < 4) {
+						e.pricehour = (priceperhour * 0.15)+priceperhour;
+						console.info("e.pricehour : ", e.pricehour);
+					}
+					else if ($scope.rating >= 4 && $scope.rating < 5) {
+						e.pricehour = (priceperhour * 0.20)+priceperhour;
+						console.info("e.pricehour : ", e.pricehour);
+					}
+					else if ($scope.rating >= 5) {
+						e.pricehour = (priceperhour * 0.25)+priceperhour;
+						console.info("e.pricehour : ", e.pricehour);
+					}
+    			})
+    		})
+		    .catch(function (err) {
+		    	console.error(err);
+    			alert("Catch Error",err);
+		    })
+		    $http.get("../requestmaid/list.json")
+    		.then(function (res) {
+      			console.info("requestmaid/list.json : ",res);
+    			$scope.reqmaid = res.data;
+    			var ll = $scope.reqmaid.length;
+    			$scope.pay = [];
+    			$scope.progress = [];
+    			$scope.complete = [];
+    			for (var i = 0 ; i < ll; i++) {
+    				var status = $scope.reqmaid[i].status;
+    				var mm = $scope.reqmaid[i];
+    				if (status == 'Matched') {
+    					$scope.pay.push(mm);
+    				}else if(status == 'Service Complete' || status == 'Cancel'){
+    					$scope.complete.push(mm);
+    				}else{
+    					$scope.progress.push(mm);
+    				}    				
+    			}
+    			if ($scope.pay != false) {
+					$scope.notiLenght = $scope.pay.length;
+          			console.info($scope.pay.length);  
+				}
+    			console.info("pay : ",$scope.pay);
+    			console.info("complete : ",$scope.complete);
+    			console.info("progress : ",$scope.progress);
+    		})
+		    .catch(function (err) {
+		    	console.error(err);
+    			alert("Catch Error",err);
+		    })
+    	})
+    	.directive('repeatDone', function() {
+	    return function(scope, element, attrs) {
+	        if (scope.$last) { // all comments rendered
+	          scope.$eval(attrs.repeatDone);
+	        }
+	      }
+	    });	
+
+    </script>
+
+	<% include navbar-maid.ejs %>
+	<div class="wrapper-sort">
+		<div class="button-filter">
+			<a class="btn btn-default" href="../../filtermaid/" role="button">Filter</a>
+		</div>
+	</div>
+	<div class="card-wrapper">
+		<div class="card" ng-repeat="m in model">			
+			<div class="image-wrapper">
+				<img src="../../{{m.imagename}}" alt="" class="image" />
+			</div>
+			<div class="content-wrapper">
+				<div class="title">
+					<h4>{{m.name}}</h4>
+				</div>
+				<div class="price">$ {{m.pricehour}} Per hour.</div>
+				<!-- <span id="stars" class="rating"></span> -->
+				<div class="actions">
+					<a href="../../employment/{{m.maid_personalid}}" id="cart" class="button flip green-solid cart">Employ</a>
+					<a ng-href="../detailmaid/{{m.maid_personalid}}" class="button black-simple more">More Details</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+  <% include head.ejs %>
+<body ng-app="maid" ng-controller="reqemp-ctrl">
+  <script>
+    angular.module("maid", [])      
+      .factory("$config", function(){
+        return {
+          post: {
+              post: {
+                  headers: {"Content-Type": "application/json;charset=UTF-8"}
+              }
+          }
+          , Firstname : <%- JSON.stringify(firstname) %> 
+          , Image : <%- JSON.stringify(image) %> 
+        }
+      })
+      .controller("reqemp-ctrl", function($scope, $http, $config, $filter){
+        $scope.firstname = $config.Firstname;
+        $scope.image = $config.Image;
+        var now = new Date();
+        var empdate, employdate, createddate;
+
+        $http.get("../requestemployment/list.json")
+        .then(function (res) {
+          console.info("requestemployment/list.json : ",res);
+          $scope.model = res.data;
+          $scope.data = [];
+
+          var _date = $filter('date');
+          $scope.model.forEach(function(e){
+            empdate =  _date(e.employ_date.replace('z', '+0700'));
+            creatdate =  _date(e.created_date.replace('z', '+0700'));
+            employdate = new Date(empdate);
+            createddate = new Date(creatdate);
+            console.info("employdate ", employdate);
+            console.info("createddate ", createddate);
+
+            var Cdiff = (createddate.getTime() - now.getTime());   
+            var Cseconds = Math.floor(Cdiff / 1000);
+            var Cminutes = Math.floor(Cseconds / 60);
+            var Chours = Math.floor(Cminutes / 60);
+            console.info("createddate || second ", Cseconds);
+            console.info("createddate || minus ", Cminutes);
+            console.info("createddate || hours ", Chours);
+
+            var Ediff = (employdate.getTime() - now.getTime());   
+            var Eseconds = Math.floor(Ediff / 1000);
+            var Eminutes = Math.floor(Eseconds / 60);
+            var Ehours = Math.floor(Eminutes / 60);
+            var Edays = Math.floor(Ehours / 24);
+            console.info("employdate || days ", Edays);
+
+            var mm = e;
+            if(Chours >= -48 && Chours <= 0 && Edays >= 0){
+              $scope.data.push(mm);
+            }else{
+              $http.post("../detailemployer/cancel", JSON.stringify({id : e.id_employ}), $config.post)
+              .then(function(res){
+                console.info("update cancel employment : ", res);                         
+              }, function(err){
+                  console.error(err);
+                }
+              )
+            }
+            if ($scope.data != false) {
+              $scope.notiLenght = $scope.data.length;
+              console.info($scope.data.length);  
+            }            
+            //console.info("mm : ",mm);
+          })
+        })
+        .catch(function (err) {
+          console.error(err);
+          alert("Catch Error",err);
+        })       
+
+        $scope.cancelEmploy = function(id){
+          $http.post("../detailemployer/cancel", JSON.stringify({id}), $config.post)
+            .then(function(res){
+              console.info("post : ", res);
+              window.location.href = '../../requestemployment';                             
+            }, function(err){
+              console.error(err);
+            }
+          )
+        }
+
+        $http.get("../requestemployment/check.json")
+        .then(function (res) {
+          console.info("requestemployment/check.json : ",res);
+          $scope.check_model = res.data;
+          if ($scope.check_model != false) {
+            var _date = $filter('date');
+            $scope.check_model.forEach(function(e){
+              empdate =  _date(e.employ_date.replace('z', '+0700'));
+              employdate = new Date(empdate);
+              console.info("employdate ", employdate);
+
+              var Ediff = (employdate.getTime() - now.getTime());   
+              var Eseconds = Math.floor(Ediff / 1000);
+              var Eminutes = Math.floor(Eseconds / 60);
+              var Ehours = Math.floor(Eminutes / 60);
+              var Edays = Math.floor(Ehours / 24);
+              console.info("employdate || days ", Edays);
+
+              if(Edays <= 1 && Edays >= 0){
+                console.info('show alert',e.id_employ);
+                document.getElementById("alert-noti").style.display = "block";
+                $scope.empdate = e.employ_date;
+                $scope.sttime = e.starttime;
+                $scope.endt = e.endtime;
+              }
+            })
+          }
+        })
+        .catch(function (err) {
+          console.error(err);
+          alert("Catch Error",err);
+        })
+
+        $http.get("../requestemployment/rating.json")
+        .then(function (res) {
+          console.info("requestemployment/rating.json : ",res);
+          $scope.rate_model = res.data;
+          $scope.rate_model.forEach(function(e){
+            var id = e.id_employ+","+e.id_date;
+            window.location.href = '../../rating/'+id;
+          })      
+        })
+        .catch(function (err) {
+          console.error(err);
+          alert("Catch Error",err);
+        })
+      });
+  </script>
+
+  <% include navbar-employer.ejs %>
+  <div style="margin-top: 70px"></div>
+  <div id="alert-noti" style="width: 90%; height: 50px; background-color: #fff; margin: 0 auto; padding: 5px; display: none;">
+    <div class="title-alert" style="font-size: 16px; text-align: center; color: #000;">
+      {{empdate | date : 'd MMM yyyy'}} is employment <br> at {{sttime | date : 'HH:mm'}} - {{endt | date : 'HH:mm'}}.
+    </div>
+  </div>
+  <div class="card-wrapper">
+    <div class="cards" ng-repeat="m in data" style="padding-bottom: 50px;" ng-hide="m.employ_date == now"> 
+      <div class="images">
+        <img src="../../{{m.imagename}}" alt="Image not load" class="images">
+      </div>
+      <div class="wrap-content">
+        <h5 class="datetime">{{m.created_date | date : 'd MMM yyyy'}}</h5>
+        <h5 class="name">{{m.empname}}</h5>
+        <h5 class="price" ng-show="m.detail.insurance == 'true'">Price : {{m.wage - 130}}</h5>
+        <h5 class="price" ng-hide="m.detail.insurance == 'true'">Price : {{m.wage - 30}}</h5>
+        <h5 class="date">Date : {{m.employ_date | date : 'd MMM yyyy'}}</h5>
+        <h5 class="time">Time : {{m.starttime | date : 'HH:mm'}} - {{m.endtime | date : 'HH:mm'}}</h5>
+        <h5 class="detail">Address : {{m.home}} {{m.soi}} {{m.road}} {{m.subdistrict}} {{m.district}} {{m.city}} </h5>
+      </div>
+      <div class="wrap-button" style="width: 100%">
+        <a ng-click="cancelEmploy(m.id_employ)" class="btn btn-default" type="button" style="float: left; width: 45%; margin: 0 2.5%;"><i class="fa fa-ban fa-fw"></i> Decline</a>
+        <a ng-href="../detailemployer/{{m.id_employ}}" class="btn btn-default" type="button" style="float: left; width: 45%; margin: 0 2.5%;"><i class="fa fa-plus fa-fw"></i> More detail</a>
+      </div>
+    </div>    
+  </div>
+</body>
+</html>

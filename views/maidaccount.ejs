@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+  <% include head.ejs %>
+<body ng-app="maid" ng-controller="account-ctrl">
+  <% include navbar-employer.ejs %>
+  <script>
+    angular.module("maid", [])      
+    .factory("$config", function(){
+      return {
+        post: {
+            post: {
+                headers: {"Content-Type": "application/json;charset=UTF-8"}
+            }
+        }
+        , Firstname : <%- JSON.stringify(firstname) %> 
+        , Image : <%- JSON.stringify(image) %> 
+      }
+    })
+    .controller("account-ctrl", function($scope, $http, $config, $filter){
+      var now = new Date;
+      var month = now.getMonth()+1;
+      var year = now.getFullYear();
+      if (month < 10) {
+        $scope.maxDate = year+"-0"+month;  
+      }else{
+        $scope.maxDate = year+"-"+month;
+      }      
+      console.info("maxdate : ",$scope.maxDate);
+
+      $scope.firstname = $config.Firstname;
+      $scope.image = $config.Image;
+      $http.get("../maidaccount/list.json")
+      .then(function (res) {
+        console.info("maidaccount/list.json : ",res);
+        $scope.model = res.data;
+        $scope.total = 0;
+        var wage;        
+        if ($scope.model != false) {
+          for (var i = 0; i < $scope.model.length; i++) {
+            console.info("i ",i);
+            console.info('insurance',$scope.model[i].detail.insurance);
+            console.info('maidaccident',$scope.model[i].detail.maidaccident);
+            if ($scope.model[i].detail.insurance != 'true' && $scope.model[i].detail.maidaccident != 'true') {
+              wage = $scope.model[i].wage - 30;              
+            }else if ($scope.model[i].detail.insurance == 'true' && $scope.model[i].detail.maidaccident != 'true') {
+              wage = $scope.model[i].wage - 130;
+            }else if ($scope.model[i].detail.insurance != 'true' && $scope.model[i].detail.maidaccident == 'true') {
+              wage = $scope.model[i].wage - 80;
+            }else if ($scope.model[i].detail.insurance == 'true' && $scope.model[i].detail.maidaccident == 'true') {
+              wage = $scope.model[i].wage - 180;
+            }else{
+              console.log('undifine jaa');
+            }
+            console.info("49 total ",$scope.total);
+            console.info("50 wage ",wage);
+            $scope.total = $scope.total+wage;
+            console.info("51 total ",$scope.total);
+          }
+        }        
+      })
+      .catch(function (err) {
+        console.error(err);
+        alert("Catch Error",err);
+      })
+      var now = new Date();
+      $http.get("../requestemployment/list.json")
+      .then(function (res) {
+        console.info("requestemployment/list.json : ",res);
+        $scope.req = res.data;
+        $scope.data = [];
+        var _date = $filter('date');
+        $scope.req.forEach(function(e){
+          empdate =  _date(e.employ_date.replace('z', '+0700'));
+          creatdate =  _date(e.created_date.replace('z', '+0700'));
+          employdate = new Date(empdate);
+          createddate = new Date(creatdate);
+          var Cdiff = (createddate.getTime() - now.getTime());   
+          var Cseconds = Math.floor(Cdiff / 1000);
+          var Cminutes = Math.floor(Cseconds / 60);
+          var Chours = Math.floor(Cminutes / 60);
+          var Ediff = (employdate.getTime() - now.getTime());   
+          var Eseconds = Math.floor(Ediff / 1000);
+          var Eminutes = Math.floor(Eseconds / 60);
+          var Ehours = Math.floor(Eminutes / 60);
+          var Edays = Math.floor(Ehours / 24);
+          var mm = e;
+          if(Chours >= -48 && Chours <= 0 && Edays >= 0){
+            $scope.data.push(mm);
+          }
+          if ($scope.data != false) {
+            $scope.notiLenght = $scope.data.length;
+            console.info($scope.data.length);  
+          }            
+        })
+      })
+
+      $scope.submit = function(my){
+        console.info("month : ",my);
+        var selectdate = new Date(my);
+        var mymonth = selectdate.getMonth()+1;
+        var myyear = selectdate.getFullYear();
+        console.info("month : ",mymonth , myyear);
+        $http.post("../maidaccount/accbymonth", JSON.stringify({month: mymonth , year: myyear}), $config.post)
+          .then(function(res){            
+            $scope.acc_model = res.data;
+            console.info("res : ", $scope.acc_model);
+            $scope.totalacc = 0;
+            var wageacc;        
+            if ($scope.model != false) {
+              for (var i = 0; i < $scope.acc_model.length; i++) {
+                // console.info("i ",i);
+                // console.info('insurance',$scope.model[i].detail.insurance);
+                // console.info('maidaccident',$scope.model[i].detail.maidaccident);
+                if ($scope.acc_model[i].detail.insurance != 'true' && $scope.acc_model[i].detail.maidaccident != 'true') {
+                  wageacc = $scope.acc_model[i].wage - 30;              
+                }else if ($scope.acc_model[i].detail.insurance == 'true' && $scope.acc_model[i].detail.maidaccident != 'true') {
+                  wageacc = $scope.acc_model[i].wage - 130;
+                }else if ($scope.acc_model[i].detail.insurance != 'true' && $scope.acc_model[i].detail.maidaccident == 'true') {
+                  wageacc = $scope.acc_model[i].wage - 80;
+                }else if ($scope.acc_model[i].detail.insurance == 'true' && $scope.acc_model[i].detail.maidaccident == 'true') {
+                  wageacc = $scope.acc_model[i].wage - 180;
+                }else{
+                  console.log('undifine jaa');
+                }
+                // console.info("49 totalacc ",$scope.totalacc);
+                // console.info("50 wageacc ",wageacc);
+                $scope.totalacc = $scope.totalacc+wageacc;
+                //console.info("51 totalacc ",$scope.totalacc);
+              }
+            }
+          }, function(err){
+            console.error(err);
+          }
+        )
+      }
+    });
+  </script>
+  <div class="wrap-ipdate">
+    <form ng-submit="submit(month)">
+      <div class="search">
+        <input class="searchTerm" type="month" placeholder="yyyy-MM" ng-required="true" min="2017-01"  max="maxDate" ng-model="month">
+        <button type="submit" class="searchButton" type="submit">
+          <i class="fa fa-search"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="wrap-acc" ng-hide="!!acc_model">   
+    <div class="totalacc">
+      <div class="title-total">{{total}} bath</div>
+    </div>
+    <div class="account">
+      <div ng-repeat="m in model"> 
+        <h5 class="price" ng-show="m.detail.insurance != 'true' && m.detail.maidaccident != 'true'">{{m.wage - 30}} Bath</h5>
+        <h5 class="price" ng-show="m.detail.insurance == 'true' && m.detail.maidaccident != 'true'">{{m.wage - 130}} Bath</h5>
+        <h5 class="price" ng-show="m.detail.insurance != 'true' && m.detail.maidaccident == 'true'">{{m.wage - 80}} Bath</h5>
+        <h5 class="price" ng-show="m.detail.insurance == 'true' && m.detail.maidaccident == 'true'">{{m.wage - 180}} Bath</h5>
+        <div class="date"> {{m.employ_date | date : 'd MMM yyyy'}}</div>
+        <div class="line"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap-acc" ng-show="!!acc_model">   
+    <div class="totalacc">
+      <div class="title-total">{{totalacc}} bath</div>
+    </div>
+    <div class="account">
+      <div ng-repeat="acc in acc_model"> 
+        <h5 class="price" ng-show="acc.detail.insurance != 'true' && acc.detail.maidaccident != 'true'">{{acc.wage - 30}} Bath</h5>
+        <h5 class="price" ng-show="acc.detail.insurance == 'true' && acc.detail.maidaccident != 'true'">{{acc.wage - 130}} Bath</h5>
+        <h5 class="price" ng-show="acc.detail.insurance != 'true' && acc.detail.maidaccident == 'true'">{{acc.wage - 80}} Bath</h5>
+        <h5 class="price" ng-show="acc.detail.insurance == 'true' && acc.detail.maidaccident == 'true'">{{acc.wage - 180}} Bath</h5>
+        <div class="date"> {{acc.employ_date | date : 'd MMM yyyy'}}</div>
+        <div class="line"></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

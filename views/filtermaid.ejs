@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html ng-app="mymaid">
+	<% include head.ejs %>
+	
+<body ng-controller="filtermaid">
+	<script src="/angular-animate/angular-animate.js"></script>
+  	<script src="/angular-aria/angular-aria.js"></script>
+  	<script src="https://cdnjs.cloudflare.com/ajax/libs/angular-material/1.0.4/angular-material.js"></script>
+
+<script>
+    angular.module('mymaid', ['ngMaterial'])
+    .factory("$config", function(){
+        return {
+          post: {
+              post: {
+                  headers: {"Content-Type": "application/json;charset=UTF-8"}
+              }
+          }
+          , Firstname : <%- JSON.stringify(firstname) %>
+          , Image : <%- JSON.stringify(image) %> 
+        }
+    })
+    .controller('filtermaid', function ($scope, $http, $config, $filter) {
+        $scope.firstname = $config.Firstname;
+        $scope.image = $config.Image;
+        $scope.gender = ('Male,Female').split(',').map(function(gender) {
+            return {objg: gender};
+        });
+        $scope.items = ['Speak English','Speak Chinese','Cleaning equipment'];
+	    $scope.selected = [];
+	    var Exlist = [];
+	    $scope.toggle = function (item, list) {
+	        var idx = list.indexOf(item);
+	        if (idx > -1) list.splice(idx, 1);
+	        else list.push(item);
+	        console.info("item : ", item);
+	        console.info("list : ", list);
+	        Exlist = list;
+	    };
+	    $scope.exists = function (item, list) {
+	        return list.indexOf(item) > -1;
+	    };
+	    
+	    $scope.submit = function (obj) {
+	        console.info("submit : ", obj);
+	        console.info("Exlist : ", Exlist);	        
+	        if (Exlist.length <= 0) {
+	        	$http.post("../../filtermaid/filter1", JSON.stringify({obj}), $config.post)
+				.then(function(res){
+					console.info("post : ", res);
+					window.location.href = '../../filtermaid/showgendermaid';
+				}, function(err){
+					console.error(err);
+					alert("Post Error", err);
+				})	
+	        }else{
+	        	obj.expert = Exlist;
+	        	$http.post("../../filtermaid/filter2", JSON.stringify({obj, expert: Exlist}), $config.post)
+				.then(function(res){
+					console.info("post : ", res);
+					window.location.href = '../../filtermaid/showfiltermaid';
+				}, function(err){
+					console.error(err);
+					alert("Post Error", err);
+				})
+	        }	        
+	    };
+	    var now = new Date();
+	    $http.get("../filtermaid/check.json")
+		.then(function (res) {
+  			console.info("filtermaid/check.json : ",res);
+			$scope.model = res.data;
+			$scope.check_model = res.data;
+			if ($scope.check_model != false) {
+				var _date = $filter('date');
+				$scope.check_model.forEach(function(e){
+					empdate =  _date(e.employ_date.replace('z', '+0700'));
+					employdate = new Date(empdate);
+					console.info("employdate ", employdate);
+
+					var Ediff = (employdate.getTime() - now.getTime());   
+					var Eseconds = Math.floor(Ediff / 1000);
+					var Eminutes = Math.floor(Eseconds / 60);
+					var Ehours = Math.floor(Eminutes / 60);
+					var Edays = Math.floor(Ehours / 24);
+					console.info("employdate || days ", Edays);
+
+					if(Edays <= 1 && Edays >= 0){
+					    console.info('show alert',e.id_employ);
+					    document.getElementById("alert-noti").style.display = "block";
+					    $scope.empdate = e.employ_date;
+					    $scope.sttime = e.starttime;
+					    $scope.endt = e.endtime;
+				  	}
+				})
+			}
+		})
+	    .catch(function (err) {
+	    	console.error(err);
+			alert("Catch Error",err);
+	    })
+
+	    $http.get("../filtermaid/rating.json")
+		.then(function (res) {
+  			console.info("filtermaid/rating.json : ",res);
+			$scope.rate_model = res.data;
+			$scope.rate_model.forEach(function(e){
+				var id = e.id_employ+","+e.id_date;
+				window.location.href = '../../rating/'+id;
+			})			
+		})
+	    .catch(function (err) {
+	    	console.error(err);
+			alert("Catch Error",err);
+	    })
+	    
+	    $scope.dataout = [];
+	    $http.get("../filtermaid/checkout.json")
+		.then(function (res) {
+  			console.info("filtermaid/checkout.json : ",res);
+			$scope.checkout_model = res.data;
+			var _date = $filter('date');
+			$scope.checkout_model.forEach(function(e){
+				empdate =  _date(e.employ_date.replace('z', '+0700'));
+				console.info("empdate : ",empdate);
+				empEtime = e.endtime;
+				Eemp = empdate+" "+empEtime;
+				EndEmp = new Date(Eemp);				
+
+				var diffEnd = (EndEmp.getTime() - now.getTime());
+				var Eseconds = Math.floor(diffEnd / 1000);
+			    var Eminutes = Math.floor(Eseconds / 60);
+				console.error("Eminutes : ",Eminutes); 	
+				if (Eminutes <= -30) {
+					if (e.checkout == null) {
+						e.showCheckOut = true;
+						var mm = e;
+						$scope.dataout.push(mm);
+						console.error("showCheckOut : ",e.showCheckOut);
+					}else{
+						e.showCheckOut = false;
+						console.error("showCheckOut : ",e.showCheckOut); 	
+					}						
+				}else{
+					e.showCheckOut = false;
+					console.error("showCheckOut : ",e.showCheckOut); 	
+				}
+				console.info("dataout : ",$scope.dataout); 	
+			})			
+		})
+	    .catch(function (err) {
+	    	console.error(err);
+			alert("Catch Error",err);
+	    })
+	    $scope.modal = function(id){
+	    	$http.post("../filtermaid/getDigit", JSON.stringify({id}), $config.post)
+				.then(function(res){						
+					$scope.employ = res.data;
+					$scope.checkoutCode = $scope.employ[0].checkoutcode;
+					$scope.idemploy = $scope.employ[0].id_employ;
+					$scope.iddate = $scope.employ[0].id_date;
+					console.info("idemploy : ", $scope.idemploy);	
+					console.info("cout : ", $scope.checkoutCode);					
+				}, function(err){
+					console.error(err);
+				}
+			)
+	    }
+	    $scope.submitout = function(){
+	    	console.info("checkid : ", $scope.idemploy);
+	    	console.info("iddate : ", $scope.iddate);
+	    	var id = $scope.idemploy+","+$scope.iddate;
+	    	$http.post("../filtermaid/checkout", JSON.stringify({id: $scope.idemploy}), $config.post)
+				.then(function(res){						
+					$scope.res = res.data;
+					console.info("res : ", $scope.res);
+					alert("Check Out Complete");
+					window.location.href = '../../rating/'+id;				
+				}, function(err){
+					console.error(err);
+				}
+			)
+	    }
+      });
+    </script>
+	<% include navbar-maid.ejs %>
+	<div style="margin-top: 60px;"></div>
+	<div id="alert-noti" style="width: 90%; height: 50px; background-color: rgba(232, 232, 232); margin: 0 auto; padding: 5px; display: none;">
+	    <div class="title-alert" style="font-size: 16px; text-align: center; color: #000;">
+	      	{{empdate | date : 'd MMM yyyy'}} is employment <br> at {{sttime | date : 'HH:mm'}} - {{endt | date : 'HH:mm'}}.
+	    </div>
+  	</div>
+  	<div ng-show="!!dataout" ng-repeat="d in dataout">
+  		<div id="alert-checkout" style="width: 90%; height: 90px; background-color: rgba(232, 232, 232); margin: 5px auto; padding: 5px;">
+		    <div class="title-alert" style="font-size: 16px; text-align: center; color: #000;">
+		      	Maid don't check out this employment. <br> Are you want to check out? <br>
+		      	<a class="btn btn-default" type="button" id="modal-button checkoutbtn" data-toggle="modal" data-target="#modalCheckout"
+							 ng-click="modal(d.id_employ)" ng-show="!!d.showCheckOut">
+					<i class="fa  fa-check-square-o fa-fw"></i> Check Out
+				</a>
+		    </div>
+	  	</div>	
+  	</div>
+  	
+    <div style="width: 5%; height: 30px; float: right; margin-right: 10px;">
+       	<a href="../../showmaid" style="font-size: 30px; color: #000; text-decoration: none;">x</a>
+    </div>
+	<div class="wrap-edit" style="margin-top: 0px;">
+	    <md-content style="clear: both;">
+	        <form name="userForm" ng-submit="submit(user)">  
+	        	<h4>Filter Maid</h4>	 
+		        <md-input-container class="md-block" ng-required="required">
+		            <label>Gender</label>
+		            <md-select ng-model="user.gender">
+		              <md-option ng-repeat="g in gender" value="{{g.objg}}">
+		                {{g.objg}}
+		              </md-option>
+		            </md-select>
+		        </md-input-container>
+		        <label style="margin-top: 15px; margin-bottom: 10px;">Perfer</label>
+	            <div ng-repeat="item in items">
+			        <md-checkbox ng-checked="exists(item, selected)" ng-click="toggle(item, selected)" class="blue">
+			            {{ item }}
+			        </md-checkbox>
+			    </div>		          
+		        <div style="width: 60%; margin: 0 auto;">
+		            <md-button class="md-raised md-cornered submit-btn" type="submit"> Submit</md-button>  
+		        </div>
+	        </form>
+	    </md-content>
+	</div>
+
+	<form class="modal fade" id="modalCheckout" role="dialog" method="POST" ng-submit="submitout()">
+	   	<div class="modal-dialog" style="width: 80%; margin: 200px auto;">
+	      	<div class="modal-content" style="padding: 10px 10px 50px 10px;">
+		        <div class="modal-body">
+	        		<h4 style="text-align: center; margin-bottom: 15px;">Are your want to check out?</h4>
+			        <div class="wrap-button" style="width: 100%; margin: 20px 0;">
+		        		<button class="btn btn-default" type="button" data-dismiss="modal" xonclick="window.history.back();"
+		        		style="width: 45%; float: left; font-size: 14px;">
+		        			<i class="fa fa-remove"></i> Cancle
+		        		</button>
+			         	<button type="submit" class="btn btn-success" id="submitbtno" ng-disabled="saving" style="width: 45%; margin-left: 10%; float: left; font-size: 14px;">
+			         		<i class="fa fa-save"></i> Submit
+			         	</button>
+		         	</div>
+	        	</div><!-- modal-body -->				        	
+	      	</div><!-- modal-content -->
+	    </div><!-- modal-dialog -->
+	</form><!-- modal -->
+
+</body>
+</html>

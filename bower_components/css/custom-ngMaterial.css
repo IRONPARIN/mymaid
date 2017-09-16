@@ -1,0 +1,89 @@
+@import url(fonts/th_krub.css);
+button, select, html, textarea, input {
+  font-family: 'THKrub' , sans-serif;
+}
+.wrap-edit{
+	margin-top: 60px;
+  width: 100%;
+  padding: 15px 20px;
+  background-color: #fff;
+  min-height:100vh;
+}
+md-input-container.md-block {
+  text-align: left;
+  width: 90%;
+  margin: 15px auto 0 auto;   
+  padding: 0;  
+  height: 40px;
+  color: #000;
+}
+md-select.md-default-theme .md-select-value.md-select-placeholder, md-select .md-select-value.md-select-placeholder {
+  font-size: 17px;
+  font-family: 'THKrub';
+}
+md-input-container > md-select {
+  font-size: 18px;
+  font-family: 'THKrub';
+}
+md-option {
+  font-size: 16px;
+  font-family: 'THKrub';
+}
+md-select.md-default-theme .md-select-value.md-select-placeholder, md-select .md-select-value.md-select-placeholder {
+    color: rgba(0,0,0,0.26);
+    font-size: 17px;
+    font-family: 'THKrub';
+}
+md-input-container:not([md-no-float]) .md-select-placeholder span:first-child {
+  font-size: 18px;
+  font-family: 'THKrub';
+}
+md-input-container.md-input-has-value .md-select-value > span:not(.md-select-icon) {
+  font-size: 18px;
+  font-family: 'THKrub';
+}
+md-select.md-default-theme .md-select-value, md-select .md-select-value {
+  border-bottom-color: rgba(0,0,0,0.3);
+}
+md-input-container.md-default-theme .md-input, md-input-container .md-input {
+  text-align: left;
+  border-color: rgba(0,0,0,0.3);
+}
+md-input-container.md-default-theme .md-input, md-input-container .md-select {
+  border-color: rgba(0,0,0,0.3);
+}
+.submit-btn{
+  width: 100%;
+  background-color: #eaeaea;
+}
+.checkboxdemoSyncing .checkboxDemo1 div {
+  clear: both; }
+.checkboxdemoSyncing .checkboxDemo1 md-checkbox {
+  float: left; }
+.checkboxdemoSyncing legend {
+  color: #3D5AFE; }
+.checkboxdemoSyncing legend code {
+  color: #3D5AFE;
+  font-weight: normal; }
+.checkboxdemoSyncing p {
+  padding-left: 8px; }
+.checkboxdemoSyncing .info {
+  padding-left: 13px; }
+.checkboxdemoSyncing div.standard {
+  padding: 8px;
+  padding-left: 15px; }
+.checkboxdemoSyncing fieldset.standard {
+  border-style: solid;
+  border-width: 1px; }
+md-checkbox.md-checked.blue .md-icon {
+  background-color: #3D5AFE;
+}
+.layout-row {
+  height: 55px;
+}
+md-input-container.md-block {
+  margin-bottom: 0;
+}
+a.md-button.md-default-theme.md-raised, a.md-button.md-raised, .md-button.md-default-theme.md-raised, .md-button.md-raised {
+  background-color: rgb(238,238,238);
+}

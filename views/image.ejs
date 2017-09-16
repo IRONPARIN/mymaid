@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <% include head.ejs %>
+    <style>
+      .uploaded-image {
+        max-width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    
+    <h1>Your image was succesfuly uploaded.</h1>
+    <div id="upload">
+        <img class="uploaded-image" src="../../<%= name %>" alt="Image name: <%= name %>"/>
+    </div>
+    
+  </body>
+</html>

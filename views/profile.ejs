@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+	<% include head.ejs %>
+	<script>
+		function openNavMaid() {
+		    document.getElementById("mySidenavMaid").style.width = "70%";
+		}
+		function closeNavMaid() {
+		    document.getElementById("mySidenavMaid").style.width = "0";
+		}
+		function openNavEmp() {
+		    document.getElementById("mySidenavEmp").style.width = "70%";
+		}
+		function closeNavEmp() {
+		    document.getElementById("mySidenavEmp").style.width = "0";
+		}
+	</script>
+
+<body ng-app="maid" ng-controller="profile-ctrl">
+	<script>
+    	angular.module("maid", [])    	
+    	.factory("$config", function(){
+    		return {
+    			post: {
+			        post: {
+			            headers: {"Content-Type": "application/json;charset=UTF-8"}
+			        }
+			    }
+			    , Firstname : <%- JSON.stringify(firstname) %> 
+			    , Image : <%- JSON.stringify(image) %> 
+			    , Role : <%- JSON.stringify(role) %> 
+    		}
+    	})
+    	.controller("profile-ctrl", function($scope, $http, $config, $filter){
+    		$scope.firstname = $config.Firstname;
+    		$scope.image = $config.Image;
+    		$scope.roleuser = $config.Role;
+    		if ($scope.roleuser == 'maid') {
+    			document.getElementById("maid-nav").style.display = "block";
+    		}else{
+    			document.getElementById("emp-nav").style.display = "block";
+    		}
+    		console.info("role : ",$scope.roleuser);
+    		$http.get("../profile/list.json")
+    		.then(function (res) {
+      			console.info("profile/list.json : ",res);
+    			$scope.model = res.data;
+    		})
+		    .catch(function (err) {
+		    	console.error(err);
+    			alert("Catch Error",err);
+		    })
+		    $http.get("../profile/imglist.json")
+    		.then(function (res) {
+      			console.info("profile/imglist.json : ",res);
+    			$scope.imagelist = res.data;
+    		})
+		    .catch(function (err) {
+		    	console.error(err);
+    			alert("Catch Error",err);
+		    })
+		    $http.get("../requestmaid/list.json")
+    		.then(function (res) {
+      			console.info("requestmaid/list.json : ",res);
+    			$scope.reqmaid = res.data;
+    			var ll = $scope.reqmaid.length;
+    			$scope.pay = [];
+    			$scope.progress = [];
+    			$scope.complete = [];
+    			for (var i = 0 ; i < ll; i++) {
+    				var status = $scope.reqmaid[i].status;
+    				var mm = $scope.reqmaid[i];
+    				if (status == 'Matched') {
+    					$scope.pay.push(mm);
+    				}else if(status == 'Service Complete' || status == 'Cancel'){
+    					$scope.complete.push(mm);
+    				}else{
+    					$scope.progress.push(mm);
+    				}    				
+    			}
+    			if ($scope.pay != false) {
+					$scope.notiLenght = $scope.pay.length;
+          			console.info($scope.pay.length);  
+				}
+    			console.info("pay : ",$scope.pay);
+    			console.info("complete : ",$scope.complete);
+    			console.info("progress : ",$scope.progress);
+    		})
+		    .catch(function (err) {
+		    	console.error(err);
+    			alert("Catch Error",err);
+		    })
+		    var now = new Date();
+		    $http.get("../requestemployment/list.json")
+        	.then(function (res) {
+	          console.info("requestemployment/list.json : ",res);
+	          $scope.modelreq = res.data;
+	          $scope.data = [];
+
+	          var _date = $filter('date');
+	          $scope.modelreq.forEach(function(e){
+	            empdate =  _date(e.employ_date.replace('z', '+0700'));
+	            creatdate =  _date(e.created_date.replace('z', '+0700'));
+	            employdate = new Date(empdate);
+	            createddate = new Date(creatdate);
+	            console.info("employdate ", employdate);
+	            console.info("createddate ", createddate);
+
+	            var Cdiff = (createddate.getTime() - now.getTime());   
+	            var Cseconds = Math.floor(Cdiff / 1000);
+	            var Cminutes = Math.floor(Cseconds / 60);
+	            var Chours = Math.floor(Cminutes / 60);
+	            console.info("createddate || second ", Cseconds);
+	            console.info("createddate || minus ", Cminutes);
+	            console.info("createddate || hours ", Chours);
+
+	            var Ediff = (employdate.getTime() - now.getTime());   
+	            var Eseconds = Math.floor(Ediff / 1000);
+	            var Eminutes = Math.floor(Eseconds / 60);
+	            var Ehours = Math.floor(Eminutes / 60);
+	            var Edays = Math.floor(Ehours / 24);
+	            console.info("employdate || days ", Edays);
+
+	            var mm = e;
+	            if(Chours >= -48 && Chours <= 0 && Edays >= 0){
+	              $scope.data.push(mm);
+	            }else{
+	              $http.post("../detailemployer/cancel", JSON.stringify({id : e.id_employ}), $config.post)
+	              .then(function(res){
+	                console.info("update cancel employment : ", res);                         
+	              }, function(err){
+	                  console.error(err);
+	                }
+	              )
+	            }
+	            if ($scope.data != false) {
+	              $scope.notiLenght = $scope.data.length;
+	              console.info($scope.data.length);  
+	            }            
+	            //console.info("mm : ",mm);
+	          })
+	        })
+	        .catch(function (err) {
+	          console.error(err);
+	          alert("Catch Error",err);
+	        })
+    	});
+    </script>
+	
+	<div id="maid-nav" style="display: none;">
+		<div class="navbar navbar-inverse navbar-fixed-top" role="navigation" id="slide-nav">
+			<div class="container">
+				<div class="navbar-header">
+				    <a class="navbar-toggle" onclick="openNavMaid()">
+					    <span class="sr-only">Toggle navigation</span>
+					    <span class="icon-bar"></span>
+					    <span class="icon-bar"></span>
+					    <span class="icon-bar"></span>
+				  	</a>
+				  	<div id="mySidenavMaid" class="sidenav">
+				  		<div class="topsidenav">		  			
+					    	<a href="javascript:void(0)" class="closebtn" onclick="closeNavMaid()">&times;</a>
+				  			<div class="Profile-pic">
+				  				<img src="../../{{image}}">
+					  		</div>
+					  		<div class="nameuser">{{firstname}}</div>
+				  		</div>
+					    <a href="../../requestemployment"><i class="fa fa-check-square-o fa-fw"></i> Request<div class="noti" ng-show="!!notiLenght">{{notiLenght}}</div></a>
+					    <a href="../../maidwork"><i class="fa fa-calendar fa-fw"></i> My Work</a>
+					    <a href="../../maidaccount"><i class="fa fa-dollar fa-fw"></i> Account</a>
+					    <a href="../../profile"><i class="fa fa-user fa-fw"></i> Profile</a>
+					    <a href="../../../../../"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
+				  	</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="emp-nav" style="display: none;">
+		<div class="navbar navbar-inverse navbar-fixed-top" role="navigation" id="slide-nav"> 
+			<div class="container">
+				<div class="navbar-header">
+				    <a class="navbar-toggle" onclick="openNavEmp()">
+					    <span class="sr-only">Toggle navigation</span>
+					    <span class="icon-bar"></span>
+					    <span class="icon-bar"></span>
+					    <span class="icon-bar"></span>
+				  	</a>
+				  	<div id="mySidenavEmp" class="sidenav">
+				  		<div class="topsidenav">		  			
+					    	<a href="javascript:void(0)" class="closebtn" onclick="closeNavEmp()">&times;</a>
+				  			<div class="Profile-pic">
+				  				<img src="../../{{image}}">
+					  		</div>
+					  		<div class="nameuser">{{firstname}}</div>
+				  		</div>
+					    <a href="../../showmaid"><i class="fa fa-search fa-fw"></i> Find My Maid</a>
+					    <a href="../../requestmaid"><i class="fa fa-check-square-o fa-fw"></i> Employment<div class="noti" ng-show="!!notiLenght">{{notiLenght}}</div></a>
+					    <a href="../../pickupmaid"><i class="fa fa-heart fa-fw"></i> Pick Up Maid</a>
+					    <a href="../../profile"><i class="fa fa-user fa-fw"></i> Profile</a>
+					    <a href="../../../../../"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
+				  	</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div style="margin-top: 70px"></div>
+	<figure class="snip1559" ng-repeat="m in model">
+		<a ng-href="../../editprofile" class="btn edit-btn" type="button">
+			<i class="fa fa-pencil fa-2x"></i>
+		</a>
+		<!-- <a ng-href="../../uploadimage/" class="btn edit-btn" type="button">
+			<i class="fa fa-camera fa-2x"></i>
+		</a> -->
+		<div class="profile-image">
+			<img src="../../{{m.imagename}}" alt="profile-sample2" />
+		</div>
+		<figcaption>
+			<h3>{{m.name}}</h3>
+			<p>{{m.aboutme}}</p>
+			<h4>Mobile Number : {{m.mobile_number}}</h4>
+			<h4>Gender : {{m.gender}}</h4>			
+			<h4>Birthdate : {{m.birthdate | date : 'd MMM yyyy'}}</h4>
+			<h4>Email : {{m.email}}</h4>
+			<h4>Address : {{m.home}} Soi {{m.soi}} {{m.road}} Rd. {{m.subdistrict}} {{m.district}} {{m.city}}</h4>
+		</figcaption>
+		<div class="wrap-img">
+			<a class="wrap-upload" href="../uploadimage/uploadmore">
+				<h5>+</h5>
+			</a>
+			<div class="moreimage" ng-repeat="m in imagelist">
+				<img src="../../{{m.name}}" alt="profile-sample2" />
+			</div>
+		</div>
+	</figure>
+</body>
+</html>

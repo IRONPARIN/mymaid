@@ -1,0 +1,35 @@
+<script>
+	function openNav() {
+	    document.getElementById("mySidenav").style.width = "70%";
+	}
+	function closeNav() {
+	    document.getElementById("mySidenav").style.width = "0";
+	}
+</script>
+
+<div class="navbar navbar-inverse navbar-fixed-top" role="navigation" id="slide-nav"> 
+	<div class="container">
+		<div class="navbar-header">
+		    <a class="navbar-toggle" onclick="openNav()">
+			    <span class="sr-only">Toggle navigation</span>
+			    <span class="icon-bar"></span>
+			    <span class="icon-bar"></span>
+			    <span class="icon-bar"></span>
+		  	</a>
+		  	<div id="mySidenav" class="sidenav">
+		  		<div class="topsidenav">		  			
+			    	<a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+		  			<div class="Profile-pic">
+		  				<img src="../../{{image}}">
+			  		</div>
+			  		<div class="nameuser">{{firstname}}</div>
+		  		</div>
+			    <a href="../../showmaid"><i class="fa fa-search fa-fw"></i> Find My Maid</a>
+			    <a href="../../requestmaid"><i class="fa fa-check-square-o fa-fw"></i> Employment<div class="noti" ng-show="!!notiLenght">{{notiLenght}}</div></a>
+			    <a href="../../pickupmaid"><i class="fa fa-heart fa-fw"></i> Pick Up Maid</a>
+			    <a href="../../profile"><i class="fa fa-user fa-fw"></i> Profile</a>
+			    <a href="../../../../../"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
+		  	</div>
+		</div>
+	</div>
+</div>

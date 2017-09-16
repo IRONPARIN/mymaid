@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+	<% include head.ejs %>
+	<script>
+    var colors = {
+      palette: ['#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722', '#795548', '#9E9E9E', '#607D8B'],
+      getRandom: function() {
+        var rand = Math.floor((Math.random() * this.palette.length) + 1);
+        return this.palette[rand - 1];
+      }
+    }
+    var listHeight = '150px';
+    $(function() {
+      $('.toggleList a').click(function() {
+        $('.toggleList').toggleClass('toggleExpanded');
+        $('section.all').toggleClass('expanded');
+        $('.mask').toggle();
+        var scrollHeight = $('.list').prop('scrollHeight');
+        var height = $('.list').height();
+        if (scrollHeight === height){
+        	$('.list').css('max-height', listHeight);	
+        }            
+        else {
+        	$('.list').css('max-height', scrollHeight + 'px');
+        	$('.toggleList a').hide();
+        }
+      });
+      $('.header').css('border-bottom-color', colors.getRandom());
+      $(".addComment a").click(function(e) {
+        var ink, d, x, y;
+        if ($(this).find(".ink").length === 0) {
+          $(this).prepend("<span class='ink'></span>");
+        }
+        ink = $(this).find(".ink");
+        ink.removeClass("animate");
+        if (!ink.height() && !ink.width()) {
+          d = Math.max($(this).outerWidth(), $(this).outerHeight());
+          ink.css({
+            height: d,
+            width: d
+          });
+        }
+        x = e.pageX - $(this).offset().left - ink.width() / 2;
+        y = e.pageY - $(this).offset().top - ink.height() / 2;
+        ink.css({
+          top: y + 'px',
+          left: x + 'px'
+        }).addClass("animate");
+      });
+      $('.list').css('max-height', listHeight);
+    });
+
+	</script>
+
+<body ng-app="maid" ng-controller="detail-maid">
+	<script>
+		angular.module("maid", [])
+    .factory("$config", function(){
+      return {
+        post: {
+            post: {
+                headers: {"Content-Type": "application/json;charset=UTF-8"}
+            }
+        }
+        , Firstname : <%- JSON.stringify(firstname) %> 
+        , Image : <%- JSON.stringify(image) %> 
+      }
+    })
+		.controller("detail-maid", function($scope,$http,$config,$filter){	
+      $scope.image = $config.Image;
+      $scope.firstname = $config.Firstname;
+      $scope.commentList = [];
+      $http.get("../detailmaid/<%= id %>.json")
+      .then(function (res) {
+        console.info("user/:id.json : ", res);
+        $scope.model = res.data;
+        if ($scope.model.pickup != null) {
+          $('.heart').toggleClass('liked');
+        }
+        $.fn.stars = function() {
+          return $(this).each(function() {
+            var rating = $scope.model.rating;
+            var numStars = 5;
+            var fullStar = new Array(Math.floor(rating + 1)).join('<i class="fa fa-star"></i>');
+            var halfStar = ((rating%1) !== 0) ? '<i class="fa fa-star-half-empty"></i>': '';
+            var noStar = new Array(Math.floor(numStars + 1 - rating)).join('<i class="fa fa-star-o"></i>');
+            $(this).html(fullStar + halfStar + noStar);
+          });
+        }
+        $('.stars').stars();
+      })
+      .catch(function (err) {
+        console.error("user/:id.json : ", err);
+        alert("Catch Error user/:id", err);
+      })
+      $http.get("../requestemployment/list.json")
+        .then(function (res) {
+          console.info("requestemployment/list.json : ",res);
+          $scope.modelreq = res.data;
+          $scope.data = [];
+          var _date = $filter('date');
+          $scope.modelreq.forEach(function(e){
+            empdate =  _date(e.employ_date.replace('z', '+0700'));
+            creatdate =  _date(e.created_date.replace('z', '+0700'));
+            employdate = new Date(empdate);
+            createddate = new Date(creatdate);
+            var Cdiff = (createddate.getTime() - now.getTime());   
+            var Cseconds = Math.floor(Cdiff / 1000);
+            var Cminutes = Math.floor(Cseconds / 60);
+            var Chours = Math.floor(Cminutes / 60);
+            var Ediff = (employdate.getTime() - now.getTime());   
+            var Eseconds = Math.floor(Ediff / 1000);
+            var Eminutes = Math.floor(Eseconds / 60);
+            var Ehours = Math.floor(Eminutes / 60);
+            var Edays = Math.floor(Ehours / 24);
+            var mm = e;
+            if(Chours >= -48 && Chours <= 0 && Edays >= 0){
+              $scope.data.push(mm);
+            }
+            if ($scope.data != false) {
+              $scope.notiLenght = $scope.data.length;
+              console.info($scope.data.length);  
+            }
+          })
+        })
+        .catch(function (err) {
+          console.error(err);
+          alert("Catch Error",err);
+        })
+
+        $http.get("../detailmaid/<%= id %>.comment")
+        .then(function (res) {
+          console.info("detailmaid/<%= id %>.comment : ",res);
+          $scope.commentdata = res.data;
+          $scope.commentdata.forEach(function(e){
+            $scope.commentList.push({'imgUrl': e.imgname,
+                'fullName': e.empname,
+                'date': e.created_date,
+                'commentHtml': e.comment
+              });
+          })
+          console.info("commentList : ",$scope.commentList);
+        })
+        .catch(function (err) {
+          console.error(err);
+          alert("Catch Error",err);
+        })
+        
+        $scope.commentsRendered = function() {
+          setTimeout(function() {
+            $('.expandWrap').toggle($('.list').prop('scrollHeight') > $('.list').height());
+          }, 0);
+        }
+        if ($scope.commentList.length == 0){
+          $('.expandWrap').hide();
+        }
+        $scope.pickupMaid = function(maidID){
+          console.info(maidID);
+          $('.heart').toggleClass('liked');  
+          $http.post("../pickupmaid/checkpick", JSON.stringify({maidID : maidID}), $config.post)
+          .then(function(res){
+            console.info("post : ", res);
+            window.location.href = '../../detailmaid/'+$scope.model.maid_personalid;
+            }, function(err){
+              console.error(err);
+            }
+          )
+        }
+      })
+      .directive('repeatDone', function() {
+        return function(scope, element, attrs) {
+          if (scope.$last) { // all comments rendered
+            scope.$eval(attrs.repeatDone);
+          }
+        }
+      });
+	</script>
+
+  <% include navbar-maid.ejs %>
+  <div style="margin-top: 60px;"></div>
+	<div class="card">
+  	  <img src="../../{{model.imagename}}" alt="" class="card-media"/>
+      <div class="heart" ng-click="pickupMaid(model.maid_personalid)"><i class="fa fa-heart"></i></div>
+  	  <div class="card-details">
+  	    <h2 class="card-head">{{model.name}}</h2>
+  	    <!-- <span class="card-head-small">
+  	    	<i class="fa fa-dollar fa-fw"></i> Price : {{model.wage}}
+  	    </span> -->
+  	    <div class="card-stars clearfix">
+  	      <div class="card-stars-list">
+  	        <span class="stars" ></span>
+  	        <span class="card-stars-text">({{model.rating}})</span>
+  	      </div>	      
+  	    </div>
+  	    <h4 class="card-descrip">Description</h4>
+  	    <p class="card-body-text">
+          About Me : {{model.aboutme}} <br>
+          Expert : {{model.expert}}
+        </p>
+
+      <div class="wrap-button">
+  			<a href="../../employment/{{model.maid_personalid}}" class="btn btn-default" type="button"><i class="fa fa-check-square-o fa-fw"></i> Employment</a>
+      </div>
+
+    <div class="all">
+			<div class="info">
+				<div class="total">
+					<span>{{commentList.length}}</span> Comments
+				</div>
+			</div>
+			<div class="list" ng-class="{noComments: commentList.length == 0}">
+				<section ng-repeat="comment in commentList" repeat-done="commentsRendered()">
+					<div class="comment-row">
+						<div class="commentPhoto">
+							<img src="../../{{comment.imgUrl}}" alt="" />
+						</div>
+						<div class="commentDetails">
+							<span class="commentUser">{{comment.fullName}}</span>
+							<span class="commentDate">{{comment.date}}</span>
+							<div class="commentText">{{comment.commentHtml}}</div>
+						</div>
+					</div>
+				</section>
+			</div>
+			<div class="expandWrap">
+				<div class="mask"></div>
+				<div class="toggleList"><a><i class="fa fa-angle-double-down"></i></a></div>
+			</div>
+    </div>
+
+  </div>
+
+</body>
+</html>

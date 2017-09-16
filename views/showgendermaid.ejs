@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+	<% include head.ejs %>
+
+<body ng-app="maid" ng-controller="maid-ctrl">
+
+	<script>
+    	angular.module("maid", [])    	
+    	.factory("$config", function(){
+    		return {
+    			post: {
+			        post: {
+			            headers: {"Content-Type": "application/json;charset=UTF-8"}
+			        }
+			    }
+			    , Firstname : <%- JSON.stringify(firstname) %>
+			    , Image : <%- JSON.stringify(image) %> 
+    		}
+    	})
+    	.controller("maid-ctrl", function($scope, $http, $config){
+    		$scope.firstname = $config.Firstname;
+    		$scope.image = $config.Image;
+    		$http.get("../filtermaid/gendermaid.json")
+    		.then(function (res) {
+      			console.info("gendermaid.json : ",res);
+    			$scope.model = res.data;
+    		})
+		    .catch(function (err) {
+		    	console.error(err);
+    			alert("Catch Error",err);
+		    })
+    	})
+    	.directive('repeatDone', function() {
+	    return function(scope, element, attrs) {
+	        if (scope.$last) { // all comments rendered
+	          scope.$eval(attrs.repeatDone);
+	        }
+	      }
+	    });	
+
+    </script>
+
+	<% include navbar-maid.ejs %>
+	<div class="wrapper-sort">
+		<div class="button-filter">
+			<a class="btn btn-default" href="../../filtermaid/" role="button">Filter</a>
+		</div>
+	</div>
+	<div class="card-wrapper">
+		<div class="card" ng-repeat="m in model">			
+			<div class="image-wrapper">
+				<img src="../../{{m.imagename}}" alt="" class="image" />
+			</div>
+			<div class="content-wrapper">
+				<div class="title">
+					<h4>{{m.name}}</h4>
+				</div>
+				<div class="price">$ {{m.wage}}</div>
+				<div class="actions">
+					<a href="../../employment/{{m.maid_personalid}}" id="cart" class="button flip green-solid cart">Employ</a>
+					<a ng-href="../detailmaid/{{m.maid_personalid}}" class="button black-simple more">More Details</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

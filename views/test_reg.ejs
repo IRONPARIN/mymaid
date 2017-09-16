@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+
+	<% include head.ejs %>
+
+	<body>
+
+    <!-- tik put this v na ka -->    
+    <script language="javascript">
+      function checkID(id)
+      {
+        if(id.length != 13) 
+          return false;        
+        for(i=0, sum=0; i < 12; i++)
+          sum += parseFloat(id.charAt(i))*(13-i); 
+        if((11-sum%11)%10!=parseFloat(id.charAt(12)))
+        return false; return true;
+      }
+      function checkForm()
+      { 
+        if(!checkID(document.form1.txtID.value))
+          alert('รหัสประชาชนไม่ถูกต้อง');
+        else 
+          alert('รหัสประชาชนถูกต้อง เชิญผ่านได้');
+      }
+    </script>
+    <!-- tik put this ^ na ka -->
+
+      <script type="text/javascript">
+    //jQuery time
+      var current_fs, next_fs, previous_fs; //fieldsets
+      var left, opacity, scale; //fieldset properties which we will animate
+      var animating; //flag to prevent quick multi-click glitches
+      $(function(){
+        $(".next").click(function() {
+        if (animating) return false;
+        animating = true;
+        current_fs = $(this).parent();
+        next_fs = $(this).parent().next();
+        //activate next step on progressbar using the index of next_fs
+        $("#progressbar li").eq($("fieldset").index(next_fs)).addClass("active");
+        //show the next fieldset
+        next_fs.show();
+        //hide the current fieldset with style
+        current_fs.animate({
+          opacity: 0
+        }, {
+          step: function(now, mx) {
+            //as the opacity of current_fs reduces to 0 - stored in "now"
+            //1. scale current_fs down to 80%
+            scale = 1 - (1 - now) * 0.2;
+            //2. bring next_fs from the right(50%)
+            left = (now * 50) + "%";
+            //3. increase opacity of next_fs to 1 as it moves in
+            opacity = 1 - now;
+            current_fs.css({
+              'transform': 'scale(' + scale + ')'
+            });
+            next_fs.css({
+              'left': left,
+              'opacity': opacity
+            });
+          },
+          duration: 800,
+          complete: function() {
+            current_fs.hide();
+            animating = false;
+          },
+          //this comes from the custom easing plugin
+          easing: 'easeInOutBack'
+        });
+        });
+        $(".previous").click(function() {
+          if (animating) return false;
+          animating = true;
+          current_fs = $(this).parent();
+          previous_fs = $(this).parent().prev();
+          //de-activate current step on progressbar
+          $("#progressbar li").eq($("fieldset").index(current_fs)).removeClass("active");
+          //show the previous fieldset
+          previous_fs.show();
+          //hide the current fieldset with style
+          current_fs.animate({
+            opacity: 0
+          }, {
+            step: function(now, mx) {
+              //as the opacity of current_fs reduces to 0 - stored in "now"
+              //1. scale previous_fs from 80% to 100%
+              scale = 0.8 + (1 - now) * 0.2;
+              //2. take current_fs to the right(50%) - from 0%
+              left = ((1 - now) * 50) + "%";
+              //3. increase opacity of previous_fs to 1 as it moves in
+              opacity = 1 - now;
+              current_fs.css({
+                'left': left
+              });
+              previous_fs.css({
+                'transform': 'scale(' + scale + ')',
+                'opacity': opacity
+              });
+            },
+            duration: 800,
+            complete: function() {
+              current_fs.hide();
+              animating = false;
+            },
+            //this comes from the custom easing plugin
+            easing: 'easeInOutBack'
+          });
+        });
+        $(".submit").click(function() {
+          return false;
+        })
+      });          
+</script>
+
+    <div class="wrap-regis">
+    <!-- multistep form -->
+
+    <!-- tik put this v na ka "name/onsubmit" -->
+      <form id="msform" name="form1" onsubmit="checkForm(); return false;">
+        <!-- progressbar -->
+        <ul id="progressbar">
+          <li class="active">Personal ID</li>
+          <li>Create Account</li>
+          <li>Personal Details</li>
+        </ul>
+        <!-- fieldsets -->
+        <fieldset>
+          <h2 class="fs-title">Authentication</h2>
+          
+            <label for="perid">Personal ID</label>
+            <input type="text" name="txtID" id="perid" placeholder="Personal ID" />
+            <div class="clear-float"></div>
+          <!-- tik change type button to submit na ka vvv -->
+          <input type="submit" name="next" class="next action-button" value="Next" />
+        </fieldset>
+        <fieldset>
+          <h2 class="fs-title">Create your account</h2>   
+          <label for="pass">Password</label>
+          <input type="password" name="pass" placeholder="Password" id="pass" />
+          <label for="cpass">Confirm Password</label>
+          <input type="password" name="cpass" placeholder="Confirm Password" id="cpass" />
+          <div class="clear-float"></div>
+          <input type="button" name="previous" class="previous action-button" value="Previous" />
+          <input type="button" name="next" class="next action-button" value="Next" />
+        </fieldset>
+        <fieldset>
+          <h2 class="fs-title">Personal Details</h2>
+          <label for="name">Name</label>
+          <input type="text" name="fname" placeholder="Name" id="name" />
+          <label for="mnumber">Mobile Number</label>
+          <input type="text" name="mnumber" placeholder="Mobile Number" id="mnumber" />
+          <div class="clear-float"></div>
+          <label for="email">Email</label>
+          <input type="text" name="email" placeholder="Email" id="email"/>
+          <label for="hnum">Home Number</label>
+          <input type="text" name="home" placeholder="Home Number" id="hnum" />
+          <div class="clear-float"></div>
+          <label for="soi">Soi</label>
+          <input type="text" name="soi" placeholder="Soi" id="soi" />
+          <label for="road">Road</label>
+          <input type="text" name="road" placeholder="Road" id="road" />
+          <label for="sdistrict">Sub-district</label>
+          <input type="text" name="subdistrict" placeholder="Sub-district" id="sdistrict" />
+          <div class="clear-float"></div>
+          <label for="district">District</label>
+          <input type="text" name="district" placeholder="District" id="district" />
+          <label for="city">City</label>
+          <input type="text" name="city" placeholder="City" id="city" />
+          <div class="clear-float"></div>
+          <input type="button" name="previous" class="previous action-button" value="Previous" />
+          <input type="submit" name="submit" class="submit action-button" value="Submit" />
+        </fieldset>
+      </form>
+    </div><!-- wrap-regis -->
+
+  </body>
+</html>

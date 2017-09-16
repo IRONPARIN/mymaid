@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html>
+	<% include head.ejs %>
+	<script>
+		$(document).ready(function(){
+			var clickedTab = $(".tabs > .active");
+			var tabWrapper = $(".tab__content");
+			var activeTab = tabWrapper.find(".active");
+			var activeTabHeight = activeTab.outerHeight();
+			activeTab.show();
+			$(".tabs > li").on("click", function() {
+				$(".tabs > li").removeClass("active");
+				$(this).addClass("active");
+				clickedTab = $(".tabs .active");
+				activeTab.fadeOut(100, function() {
+					$(".tab__content > li").removeClass("active");
+					var clickedTabIndex = clickedTab.index();
+					$(".tab__content > li").eq(clickedTabIndex).addClass("active");
+					activeTab = $(".tab__content > .active");
+					activeTabHeight = activeTab.outerHeight();
+					tabWrapper.stop().delay(20).animate({
+						height: activeTabHeight
+					}, 500, function() {
+						activeTab.delay(1).fadeIn(50);
+					});
+				});
+			});		
+		});
+	</script>
+	<script>
+	    function load() {
+	      	document.getElementById('submitbtn').disabled = true;
+	      	document.getElementById('submitbtno').disabled = true;
+	    }
+	    window.onload = load;
+  	</script>
+<body ng-app="maid" ng-controller="maidwork-ctrl">
+	<script>
+		angular.module("maid", ['ngMaterial'])    	
+    	.factory("$config", function(){
+    		return {
+    			post: {
+			        post: {
+			            headers: {"Content-Type": "application/json;charset=UTF-8"}
+			        }
+			    }
+			    , Firstname : <%- JSON.stringify(firstname) %> 
+			    , Image : <%- JSON.stringify(image) %> 
+    		}
+    	})
+    	.controller("maidwork-ctrl", function($scope, $http, $config, $filter){
+    		$scope.firstname = $config.Firstname;
+    		$scope.image = $config.Image;
+		    var now = new Date();
+		    var empdate, employdate, createddate;
+		    $http.get("../requestemployment/list.json")
+	        .then(function (res) {
+	          console.info("requestemployment/list.json : ",res);
+	          $scope.req = res.data;
+	          $scope.data = [];
+	          var _date = $filter('date');
+	          $scope.req.forEach(function(e){
+	            empdate =  _date(e.employ_date.replace('z', '+0700'));
+	            creatdate =  _date(e.created_date.replace('z', '+0700'));
+	            employdate = new Date(empdate);
+	            createddate = new Date(creatdate);
+	            var Cdiff = (createddate.getTime() - now.getTime());   
+	            var Cseconds = Math.floor(Cdiff / 1000);
+	            var Cminutes = Math.floor(Cseconds / 60);
+	            var Chours = Math.floor(Cminutes / 60);
+	            var Ediff = (employdate.getTime() - now.getTime());   
+	            var Eseconds = Math.floor(Ediff / 1000);
+	            var Eminutes = Math.floor(Eseconds / 60);
+	            var Ehours = Math.floor(Eminutes / 60);
+	            var Edays = Math.floor(Ehours / 24);
+	            var mm = e;
+	            if(Chours >= -48 && Chours <= 0 && Edays >= 0){
+	              $scope.data.push(mm);
+	            }else{
+	              $http.post("../detailemployer/cancel", JSON.stringify({id : e.id_employ}), $config.post)
+	              .then(function(res){
+	                console.info("update cancel employment : ", res);                         
+	              }, function(err){
+	                  console.error(err);
+	                }
+	              )
+	            }
+	            if ($scope.data != false) {
+	              $scope.notiLenght = $scope.data.length;
+	              console.info($scope.data.length);  
+	            }            
+	          })
+	        })
+			
+    		$http.get("../maidwork/list.json")
+    		.then(function (res) {
+      			console.info("maidwork/list.json : ",res);
+    			$scope.model = res.data;
+    			var ll = $scope.model.length;
+    			$scope.progress = [];
+    			$scope.complete = [];
+    			var empdate ,empStime, empEtime, Semp, Eemp, StartEmp, EndEmp, MinStartEmp, MinEndEmp;
+
+    			var _date = $filter('date');
+    			$scope.model.forEach(function(e){
+    				//console.info(_date(e.employ_date, 'd MMM yyyy'), _date(e.employ_date.replace('z', '+0700'), 'd MMM yyyy'));
+    				empdate =  _date(e.employ_date.replace('z', '+0700'));
+    				console.info("empdate : ",empdate);
+    				empStime = e.starttime;
+    				empEtime = e.endtime;
+    				Semp = empdate+" "+empStime;
+    				Eemp = empdate+" "+empEtime;
+    				StartEmp = new Date(Semp);
+    				EndEmp = new Date(Eemp);
+    				// console.info("Semp : ",Semp);
+    				// console.info("Eemp : ",Eemp);
+    				// console.info("StartEmp : ",StartEmp);
+    				// console.info("EndEmp : ",EndEmp);
+    				// console.info("Stime ", StartEmp.getTime());
+    				// console.info("Etime ", EndEmp.getTime());
+
+    				var diffStart = (StartEmp.getTime() - now.getTime());   
+					var Sseconds = Math.floor(diffStart / 1000);
+				    var Sminutes = Math.floor(Sseconds / 60);
+    				console.error("Sminutes : ",Sminutes); 	
+    				if (Sminutes <= 30 && Sminutes >= -30) {
+    					if (e.checkin == null){
+    						e.showCheckIn = true;
+    						console.error("showCheckIn : ",e.showCheckIn); 	
+    					}else{
+    						e.showCheckIn = false;
+    						console.error("showCheckIn : ",e.showCheckIn); 	
+    					}    					
+    				}else{
+    					e.showCheckIn = false;
+    					console.error("showCheckIn :",e.showCheckIn); 
+    				}
+    							
+    				var diffEnd = (EndEmp.getTime() - now.getTime());
+					var Eseconds = Math.floor(diffEnd / 1000);
+				    var Eminutes = Math.floor(Eseconds / 60);
+					console.error("Eminutes : ",Eminutes); 	
+					if (Eminutes <= 30 && Eminutes >= -30) {
+						if (e.checkout == null) {
+							e.showCheckOut = true;
+							console.error("showCheckOut : ",e.showCheckOut); 	
+						}else{
+							e.showCheckOut = false;
+							console.error("showCheckOut : ",e.showCheckOut); 	
+						}						
+					}else{
+						e.showCheckOut = false;
+						console.error("showCheckOut : ",e.showCheckOut); 	
+					}		
+
+    				var status = e.status;
+    				var mm = e;
+    				if(status == 'Service Complete' || status == 'Cancel'){
+    					$scope.complete.push(mm);
+    				}
+    				else{
+    					$scope.progress.push(mm);
+    				}
+    			})
+    			console.info("complete : ",$scope.complete);
+    			console.info("progress : ",$scope.progress);
+    		})
+		    .catch(function (err) {
+		    	console.error(err);
+    			alert("Catch Error",err);
+		    })
+		    $scope.modal = function(id){
+		    	$http.post("../maidwork/getDigit", JSON.stringify({id}), $config.post)
+					.then(function(res){						
+						$scope.employ = res.data;
+						$scope.checkinCode = $scope.employ[0].checkincode;
+						$scope.checkoutCode = $scope.employ[0].checkoutcode;
+						$scope.idemploy = $scope.employ[0].id_employ;
+						$scope.iddate = $scope.employ[0].id_date;
+						console.info("idemploy : ", $scope.idemploy);
+						console.info("cin : ", $scope.checkinCode);		
+						console.info("cout : ", $scope.checkoutCode);					
+					}, function(err){
+						console.error(err);
+					}
+				)
+		    }
+		    $scope.checkindigit = function(digit){
+		    	console.info("digit : ", digit);
+		    	if (digit == $scope.checkinCode) {
+		    		$scope.check.err = "Check in digit is true"; 
+			        document.getElementById('errtext').style.color = "green";
+			        document.getElementById("submitbtn").disabled = false;			        
+			        document.getElementById("checkbtn").disabled = true;
+			        document.getElementById("digija").disabled = true;
+		    	}
+		    	else{
+		    		$scope.check.err = "Check in digit is false"; 
+			        document.getElementById('errtext').style.color = "red";
+			        document.getElementById("submitbtn").disabled = true;
+		    	}
+		    }
+		    $scope.checkoutdigit = function(digit){
+		    	console.info("digit : ", digit);
+		    	if (digit == $scope.checkoutCode) {
+		    		$scope.check.err = "Check in digit is true"; 
+			        document.getElementById('errtexto').style.color = "green";
+			        document.getElementById("submitbtno").disabled = false;			        
+			        document.getElementById("checkbtno").disabled = true;
+			        document.getElementById("digijao").disabled = true;
+		    	}
+		    	else{
+		    		$scope.check.err = "Check in digit is false"; 
+			        document.getElementById('errtext').style.color = "red";
+			        document.getElementById("submitbtn").disabled = true;
+		    	}
+		    }		    
+		    $scope.submitin = function(check){
+		    	console.info("checkid : ", $scope.idemploy);
+		    	console.info("check : ", check.digit);
+		    	$http.post("../maidwork/checkin", JSON.stringify({id: $scope.idemploy}), $config.post)
+					.then(function(res){						
+						$scope.res = res.data;
+						console.info("res : ", $scope.res);	
+						alert("Check In Complete");
+						window.location.href = '../../maidwork';					
+					}, function(err){
+						console.error(err);
+					}
+				)
+		    }
+		    $scope.submitout = function(check){
+		    	console.info("checkid : ", $scope.idemploy);
+		    	console.info("iddate : ", $scope.iddate);
+		    	console.info("check : ", check.digit);
+		    	var id = $scope.idemploy+","+$scope.iddate;
+		    	$http.post("../maidwork/checkout", JSON.stringify({id: $scope.idemploy}), $config.post)
+					.then(function(res){						
+						$scope.res = res.data;
+						console.info("res : ", $scope.res);
+						alert("Check Out Complete");
+						window.location.href = '../../rating/'+id;				
+					}, function(err){
+						console.error(err);
+					}
+				)
+		    }
+		    $scope.cancelEmploy = function(dateemp,idd,date_id){
+		    	console.info(idd,dateemp,date_id);
+            	$scope.idemp = idd;
+            	$scope.date_id = date_id;
+		    	var now = new Date();
+		    	var _date = $filter('date');
+		    	var empdate =  _date(dateemp.replace('z', '+0700'));
+		    	var employdate = new Date(empdate);
+		    	console.info('employdate : ',employdate);
+		    	var Ediff = (employdate.getTime() - now.getTime());   
+	            var Eseconds = Math.floor(Ediff / 1000);
+	            var Eminutes = Math.floor(Eseconds / 60);
+	            var Ehours = Math.floor(Eminutes / 60);
+	            var Edays = Math.floor(Ehours / 24);
+	            console.info('edays : ',Edays);
+	            if (Edays <= 1) {
+	            	$scope.cancelText = "Can't Cancel This Employment";
+	            	document.getElementById("submitcc").disabled = true;	            	
+	            }
+		    }
+		    $scope.submit = function(empidd){
+		    	$http.post("../rating/maidcancel", JSON.stringify({idemp : $scope.idemp,date_id : $scope.date_id}), $config.post)
+					.then(function(res){						
+						$scope.res = res.data;
+						console.info("res : ", $scope.res);
+						alert("Cancel Complete");
+						if (!!res) {
+							$http.post("../detailemployer/cancel", JSON.stringify({id : $scope.idemp}), $config.post)
+				              	.then(function(res){
+				                	console.info("update cancel employment : ", res);  
+				                	window.location.href = '../../maidwork';                       
+				              	}, function(err){
+				                  	console.error(err);
+				                }
+				            )
+						}	
+					}, function(err){
+						console.error(err);
+					}
+				)
+		    }
+    	});
+	</script>
+	<% include navbar-employer.ejs %>
+	<div style="margin-top: 60px"></div>
+	<ul class="tabs">
+		<li class="active">In Progress</li>
+		<li>Complete</li>
+	</ul>
+	<ul class="tab__content">
+		<li class="active">				
+			<div class="card-wrapper">
+				<div class="cards" ng-repeat="m in progress">
+					<div class="images">
+						<img src="../../{{m.imagename}}" alt="Image not load" class="images">
+					</div>
+					<div class="wrap-content">
+						<h5 class="datetime">{{m.created_date | date : 'd MMM yyyy'}}</h5>
+						<h5 class="name">{{m.maidname}}</h5>
+						<h5 class="price" ng-show="m.detail.insurance != 'true' && m.detail.maidaccident != 'true'">Wage : {{m.wage - 30}} Bath</h5>
+	                    <h5 class="price" ng-show="m.detail.insurance == 'true' && m.detail.maidaccident != 'true'">Wage : {{m.wage - 130}} Bath</h5>
+	                    <h5 class="price" ng-show="m.detail.insurance != 'true' && m.detail.maidaccident == 'true'">Wage : {{m.wage - 80}} Bath</h5>
+	                    <h5 class="price" ng-show="m.detail.insurance == 'true' && m.detail.maidaccident == 'true'">Wage : {{m.wage - 180}} Bath</h5>
+						<h5 class="status">Status : {{m.status}}</h5>
+						<h5 class="date">Date : {{m.employ_date | date : 'd MMM yyyy'}}</h5>
+						<h5 class="time">Time : {{m.starttime | date : 'HH:mm'}} - {{m.endtime | date : 'HH:mm'}}</h5>
+						<h5 class="detail">Detail</h5>
+						<p>Address : {{m.home}} {{m.soi}} {{m.road}} {{m.subdistrict}} {{m.district}} {{m.city}} </p>
+						<p ng-show="m.detail.maidaccident == 'true'">Accident Insurance : Chosen</p>
+					</div>
+					<div class="wrap-button">
+						<a class="btn btn-default" type="button" id="modal-button checkinbtn" data-toggle="modal" data-target="#modalCheckin"
+						 ng-click="modal(m.id_employ)" ng-show="!!m.showCheckIn">
+							<i class="fa  fa-check-square-o fa-fw"></i> Check In
+						</a>
+						<a class="btn btn-default" type="button" id="modal-button checkoutbtn" data-toggle="modal" data-target="#modalCheckout"
+						 ng-click="modal(m.id_employ)" ng-show="!!m.showCheckOut">
+							<i class="fa  fa-check-square-o fa-fw"></i> Check Out
+						</a>
+						<button class="btn btn-default" id="modal-button" type="button" ng-click="cancelEmploy(m.employ_date,m.id_employ,m.id_date)" data-toggle="modal" data-target="#modalCancel"><i class="fa fa-ban fa-fw"></i> Cancel </button>
+				  	</div>
+				</div>
+			</div>
+		</li>
+		<li>
+			<div class="card-wrapper">
+				<div class="cards" ng-repeat="m in complete">
+					<div class="images">
+						<img src="../../{{m.imagename}}" alt="Image not load" class="images">
+					</div>
+					<div class="wrap-content">
+						<h5 class="datetime">{{m.created_date | date : 'd MMM yyyy'}}</h5>
+						<h5 class="name">{{m.maidname}}</h5>
+						<h5 class="price">Price : {{m.wage}}</h5>
+						<h5 class="status">Status : {{m.status}}</h5>
+						<h5 class="date">Date : {{m.employ_date | date : 'd MMM yyyy'}}</h5>
+						<h5 class="time">Time : {{m.starttime | date : 'HH:mm'}} - {{m.endtime | date : 'HH:mm'}}</h5>
+						<h5 class="detail">Detail</h5>
+						<p>Address : {{m.home}} {{m.soi}} {{m.road}} {{m.subdistrict}} {{m.district}} {{m.city}} </p>
+						<p ng-show="m.detail.maidaccident == 'true'">Accident Insurance : Chosen</p>
+					</div>
+				</div>
+			</div>			
+		</li>
+	</ul>
+	<% include checkin.ejs %>
+	<% include checkout.ejs %>
+
+	<form class="modal fade" id="modalCancel" role="dialog" style="" method="POST" ng-submit="submit(empID)">
+       	<div class="modal-dialog" style="width: 80%; margin: 200px auto;">
+	      	<div class="modal-content" style="padding: 10px;">
+		        <div class="modal-body">
+	        		<h4 style="text-align: center; margin-bottom: 10px; font-size: 20px;">Cancel Employment?</h4>
+	        		<h5 style="text-align: center; margin-bottom: 10px; font-size: 16px;" ng-show="!!cancelText">{{cancelText}}</h5>
+	        		<button class="btn btn-default" type="button" data-dismiss="modal" xonclick="window.history.back();">Cancle</button>
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		         	<button type="submit" id="submitcc" class="btn btn-success" ng-disabled="saving"><i class="fa fa-save"></i> Submit</button>
+	        	</div><!-- modal-body -->				        	
+	      	</div><!-- modal-content -->
+	    </div><!-- modal-dialog -->
+   	</form><!-- modal -->
+</body>
+</html>

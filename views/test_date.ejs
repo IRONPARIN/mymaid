@@ -1,0 +1,82 @@
+<html ng-app="maid">
+  
+  <% include head.ejs %>
+  
+  <body ng-controller="dropdownCtrl">
+
+  <script src="/angular-animate/angular-animate.js"></script>
+  <script src="/angular-aria/angular-aria.js"></script>  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-material/1.0.4/angular-material.js"></script>
+
+  <script>
+    angular.module('maid', ['ngMaterial'])
+    .factory("$config", function(){
+      return {
+        Address: <%- JSON.stringify(config.Address) %>
+      }
+    })
+    .controller('dropdownCtrl', function($scope, $http, $config, $filter) {
+        $scope.address = $config.Address;
+        $scope.citylist = $scope.address.citylist;
+        $scope.districtlist = $scope.address.districtlist;
+        $scope.subdistrictlist = $scope.address.subdistrictlist;
+        $scope.getCity = function () {
+            return citylist;
+        };
+        $scope.getCityDistrict = function (cityId) {
+            $scope.district = ($filter('filter')($scope.districtlist, { cityId: cityId }));
+            $scope.showDistrict(cityId);
+        };
+        $scope.getDistrictSubDistrict = function (districtId) {
+            $scope.subdistrict = ($filter('filter')($scope.subdistrictlist, { districtId: districtId }));
+            $scope.showSubDistrict(districtId);
+        };
+        $scope.showDistrict = function (cityId) {
+            $scope.District = false;
+            return false;
+        }
+        $scope.showSubDistrict = function (districtId) {
+            $scope.SubDistrict = false;
+            return false;
+        }
+    });       
+  </script>
+ 
+<div class="container">
+  <form class="form-horizontal">
+
+        <md-input-container class="md-block" flex-gt-sm > 
+          <label>City</label>
+          <md-select name="city" ng-model="model.City" ng-required="true">
+              <md-option ng-repeat="city in citylist" value="{{city.city}}" ng-click="getCityDistrict(city.id)" >
+                  {{city.city}}
+              </md-option>
+          </md-select>    
+        </md-input-container> 
+      </div>
+    </div>
+
+       
+        <md-input-container class="md-block" flex-gt-sm ng-show="!!model.City">
+            <label>District</label>
+            <md-select name="district" ng-model="model.District" ng-required="true" >
+                <md-option ng-repeat="district in district" value="{{district.district}}" ng-click="getDistrictSubDistrict(district.id)">
+                    {{district.district}}
+                </md-option>
+            </md-select>           
+        </md-input-container> 
+
+        <md-input-container class="md-block" flex-gt-sm ng-show="!!model.District">
+            <label>Sub-District</label>
+            <md-select name="subdistrict" ng-model="model.SubDistrict" ng-required="true" >
+                <md-option ng-repeat="subdistrict in subdistrict" value="{{subdistrict.subdistrict}}">
+                    {{subdistrict.subdistrict}}
+                </md-option>
+            </md-select>           
+        </md-input-container>   
+
+  </form>
+</div>
+  
+  </body>
+</html>

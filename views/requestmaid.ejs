@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+	<% include head.ejs %>
+	<script>
+		$(document).ready(function(){
+			var clickedTab = $(".tabs > .active");
+			var tabWrapper = $(".tab__content");
+			var activeTab = tabWrapper.find(".active");
+			var activeTabHeight = activeTab.outerHeight();
+			activeTab.show();
+			$(".tabs > li").on("click", function() {
+				$(".tabs > li").removeClass("active");
+				$(this).addClass("active");
+				clickedTab = $(".tabs .active");
+				activeTab.fadeOut(100, function() {
+					$(".tab__content > li").removeClass("active");
+					var clickedTabIndex = clickedTab.index();
+					$(".tab__content > li").eq(clickedTabIndex).addClass("active");
+					activeTab = $(".tab__content > .active");
+					activeTabHeight = activeTab.outerHeight();
+					tabWrapper.stop().delay(20).animate({
+						height: activeTabHeight
+					}, 500, function() {
+						activeTab.delay(1).fadeIn(50);
+					});
+				});
+			});		
+		});
+	</script>
+<body ng-app="maid" ng-controller="reqmaid-ctrl">
+	<script>
+		angular.module("maid", [])    	
+    	.factory("$config", function(){
+    		return {
+    			post: {
+			        post: {
+			            headers: {"Content-Type": "application/json;charset=UTF-8"}
+			        }
+			    }
+			    , Firstname : <%- JSON.stringify(firstname) %> 
+			    , Image : <%- JSON.stringify(image) %> 
+    		}
+    	})
+    	.controller("reqmaid-ctrl", function($scope, $http, $config,$filter){
+    		$scope.firstname = $config.Firstname;
+    		$scope.image = $config.Image;
+    		var now = new Date();
+	        var month = ('0' + (now.getMonth() + 1)).slice(-2);
+	        var year = now.getUTCFullYear();
+	        var date = ('0' + now.getDate()).slice(-2);
+	        console.info("today is ", year, month , date);
+	        var today = ""+year+month+date;
+	        $scope.today = today;
+	        console.info("today ", today);
+	        
+    		$http.get("../requestmaid/list.json")
+    		.then(function (res) {
+      			console.info("requestmaid/list.json : ",res);
+    			$scope.model = res.data;
+    			var ll = $scope.model.length;
+    			$scope.pay = [];
+    			$scope.progress = [];
+    			$scope.complete = [];
+    			for (var i = 0 ; i < ll; i++) {
+    				var status = $scope.model[i].status;
+    				var mm = $scope.model[i];
+    				if (status == 'Matched') {
+    					$scope.pay.push(mm);
+    				}else if(status == 'Service Complete' || status == 'Cancel'){
+    					$scope.complete.push(mm);
+    				}else{
+    					$scope.progress.push(mm);
+    				}    				
+    			}
+    			if ($scope.pay != false) {
+					$scope.notiLenght = $scope.pay.length;
+          			console.info($scope.pay.length);  
+				}
+    			console.info("pay : ",$scope.pay);
+    			console.info("complete : ",$scope.complete);
+    			console.info("progress : ",$scope.progress);
+    		})
+		    .catch(function (err) {
+		    	console.error(err);
+    			alert("Catch Error",err);
+		    })	
+
+		    $scope.cancelEmploy = function(price,date,id){
+		    	console.info(price,date);
+		    	$scope.empID = id;
+		    	var price = price;
+		    	var insurance = insurance;
+		    	var now = new Date();
+		    	var _date = $filter('date');
+		    	var empdate =  _date(date.replace('z', '+0700'));
+		    	var employdate = new Date(empdate);
+		    	console.info('employdate : ',employdate);
+		    	var Ediff = (employdate.getTime() - now.getTime());   
+	            var Eseconds = Math.floor(Ediff / 1000);
+	            var Eminutes = Math.floor(Eseconds / 60);
+	            var Ehours = Math.floor(Eminutes / 60);
+	            var Edays = Math.floor(Ehours / 24);
+	            console.info('edays : ',Edays);
+	            if (Edays >= 30) {
+	            	$scope.refund = price - 30;
+	            	console.info($scope.refund);
+	            }else if (Edays >= 15 && Edays <= 30) {
+	            	$scope.refund = (price - 30)/2;
+	            	console.info($scope.refund);
+	            }else if (Edays >= 7 && Edays <= 15){
+	            	$scope.refund = 0;
+	            	console.info($scope.refund);
+	            }else if (Edays <= 0){
+	            	$scope.refundtext = "Can't Cancel This Employment";
+	            	console.info($scope.refundtext);
+	            }
+		    }	   
+
+		    $scope.submit = function(idd){
+		    	console.info(idd);
+		    	$http.post("../detailemployer/cancel", JSON.stringify({idd}), $config.post)
+		            .then(function(res){
+		              	console.info("post : ", res);
+		              	window.location.href = '../../requestmaid';                             
+		            }, function(err){
+		              	console.error(err);
+		            }
+		         )
+		    } 
+    	});
+	</script>
+	<% include navbar-maid.ejs %>
+	<div style="margin-top: 60px"></div>	
+
+	<ul class="tabs">
+		<li class="active" style="padding: 20px 5px 25px 5px;">Payment<div class="noti" ng-show="!!notiLenght">{{notiLenght}}</div></li>
+		<li>In Progress</li>
+		<li>Complete</li>
+	</ul>
+	<ul class="tab__content">
+		<li class="active">				
+			<div class="card-wrapper" style="width: 95%; margin: 0 auto 30px auto;">
+				<div class="cards" ng-repeat="m in pay">
+					<div class="images">
+						<img src="../../{{m.imagename}}" alt="Image not load" class="images">
+					</div>
+					<div class="wrap-content">
+						<h5 class="datetime">{{m.created_date | date : 'd MMM yyyy'}}</h5>
+						<h5 class="name">{{m.maidname}}</h5>
+						<h5 class="price">Price : {{m.wage}}</h5>
+						<h5 class="status">Status : {{m.status}}</h5>
+						<h5 class="date">Date : {{m.employ_date | date : 'd MMM yyyy'}}</h5>
+						<h5 class="date">Time : {{m.starttime | date : 'HH:mm'}} - {{m.endtime | date : 'HH:mm'}}</h5>
+						<h5 class="checkin" ng-show="m.status == 'Paid'">Check in code : {{m.checkincode}}</h5>
+						<h5 class="checkout" ng-show="m.status == 'Paid'">Check out code : {{m.checkoutcode}}</h5>
+						<h5 class="detail">Detail</h5>
+						<p>Address : {{m.home}} {{m.soi}} {{m.road}} {{m.subdistrict}} {{m.district}} {{m.city}} </p>
+						<p ng-show="m.detail.insurance == 'true'">Damage Insurance : Chosen</p>
+					</div>
+					<div class="wrap-button">
+						<a ng-href="../payment/{{m.id_employ}}" ng-show="m.status == 'Matched'" class="btn btn-default" type="button" style="margin-bottom: 10px;">
+							<i class="fa fa-dollar fa-fw"></i> Payment
+						</a>
+						<button class="btn btn-default" id="modal-button" type="button" ng-click="cancelEmploy(m.wage,m.employ_date,m.id_employ)" data-toggle="modal" data-target="#modalCancel"><i class="fa fa-ban fa-fw"></i> Cancel </button>
+				  	</div>
+				</div>				
+			</div>
+		</li>
+		<li>
+			<div class="card-wrapper" style="width: 95%; margin: 0 auto 30px auto;">
+				<div class="cards" ng-repeat="m in progress">
+					<div class="images">
+						<img src="../../{{m.imagename}}" alt="Image not load" class="images">
+					</div>
+					<div class="wrap-content">
+						<h5 class="datetime">{{m.created_date | date : 'd MMM yyyy'}}</h5>
+						<h5 class="name">{{m.maidname}}</h5>
+						<h5 class="price">Price : {{m.wage}}</h5>
+						<h5 class="status">Status : {{m.status}}</h5>
+						<h5 class="date">Date : {{m.employ_date | date : 'd MMM yyyy'}}</h5>
+						<h5 class="date">Time : {{m.starttime | date : 'HH:mm'}} - {{m.endtime | date : 'HH:mm'}}</h5>
+						<h5 class="checkin" ng-show="m.status == 'Paid'">Check in code : {{m.checkincode}}</h5>
+						<h5 class="checkin" ng-show="!!m.checkin">Check in time : {{m.checkin | date:'medium'}}</h5>
+						<h5 class="checkout" ng-show="m.status == 'Paid'">Check out code : {{m.checkoutcode}}</h5>
+						<h5 class="detail">Detail</h5>
+						<p>Address : {{m.home}} {{m.soi}} {{m.road}} {{m.subdistrict}} {{m.district}} {{m.city}} </p>
+						<p ng-show="m.detail.insurance == 'true'">Damage Insurance : Chosen</p>
+					</div>
+					<div class="wrap-button">
+						<button class="btn btn-default" id="modal-button" type="button" ng-click="cancelEmploy(m.wage,m.employ_date,m.id_employ)" data-toggle="modal" data-target="#modalCancel"><i class="fa fa-ban fa-fw"></i> Cancel </button>
+				  	</div>
+				</div>
+			</div>			
+		</li>
+		<li>				
+			<div class="card-wrapper" style="width: 95%; margin: 0 auto 30px auto;">
+				<div class="cards" ng-repeat="m in complete">
+					<div class="images">
+						<img src="../../{{m.imagename}}" alt="Image not load" class="images">
+					</div>
+					<div class="wrap-content">
+						<h5 class="datetime">{{m.created_date | date : 'd MMM yyyy'}}</h5>
+						<h5 class="name">{{m.maidname}}</h5>
+						<h5 class="price">Price : {{m.wage}}</h5>
+						<h5 class="status">Status : {{m.status}}</h5>
+						<h5 class="date">Date : {{m.employ_date | date : 'd MMM yyyy'}}</h5>
+						<h5 class="date">Time : {{m.starttime | date : 'HH:mm'}} - {{m.endtime | date : 'HH:mm'}}</h5>
+						<h5 class="checkin" ng-show="m.status == 'Paid'">Check in code : {{m.checkincode}}</h5>
+						<h5 class="checkin" ng-show="!!m.checkin">Check in time : {{m.checkin | date:'medium'}}</h5>
+						<h5 class="checkout" ng-show="!!m.checkin">Check out time : {{m.checkout | date:'medium'}}</h5>
+						<h5 class="checkout" ng-show="m.status == 'Paid'">Check out code : {{m.checkoutcode}}</h5>
+						<h5 class="detail">Detail</h5>
+						<p>Address : {{m.home}} {{m.soi}} {{m.road}} {{m.subdistrict}} {{m.district}} {{m.city}} </p>
+						<p ng-show="m.detail.insurance == 'true'">Damage Insurance : Chosen</p>
+					</div>
+				</div>
+			</div>
+		</li>
+	</ul>
+	<form class="modal fade" id="modalCancel" role="dialog" style="" method="POST" ng-submit="submit(empID)">
+       	<div class="modal-dialog" style="width: 80%; margin: 200px auto;">
+	      	<div class="modal-content" style="padding: 10px;">
+		        <div class="modal-body">
+	        		<h4 style="text-align: center; margin-bottom: 10px; font-size: 20px;">Cancel Employment?</h4>
+	                <p style="font-size: 17px; text-align: center;" ng-hide="!!refundtext">Refund : {{refund}} </p> 
+	                <p style="font-size: 17px; text-align: center;" ng-show="!!refundtext">{{refundtext}}</p> 
+	        		<button class="btn btn-default" type="button" data-dismiss="modal" xonclick="window.history.back();">Cancle</button>
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		         	<button type="submit" class="btn btn-success" ng-disabled="saving"><i class="fa fa-save"></i> Submit</button>
+	        	</div><!-- modal-body -->				        	
+	      	</div><!-- modal-content -->
+	    </div><!-- modal-dialog -->
+   	</form><!-- modal -->
+</body>
+</html>
